@@ -221,6 +221,25 @@
          return encodeURI(url);
       }
       
+      function getStaticVcfUrl() {
+         var vcf = "'http://s3.amazonaws.com/1000genomes/release/20101123/interim_phase1_release/ALL.chr2.phase1.projectConsensus.genotypes.vcf.gz'";
+         var url = "http://0.0.0.0:7090?cmd=" + vcf + " "
+                 + "2:" + getMin() + "-" + getMax()
+                 + "&format=json";
+                 
+         return encodeURI(url);
+      }
+      
+      function getStaticVcfData() {
+         var url = getStaticVcfUrl();
+         var socket = io.connect(url);
+         socket.on('results', function(res) {
+            var results = JSON.parse(res.data);
+            if (results.length == 0) return;            
+         });
+         socket.emit('run', { 'url' : url })
+      }
+      
       function getFreebayesUrl() {
          var url = "http://0.0.0.0:8080?cmd=-f /Users/chase/Tools/freebayes/data/hs_ref_chr"
                   + getChromosome() + ".fa"
