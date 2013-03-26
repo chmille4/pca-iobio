@@ -2,6 +2,8 @@
 <html>
 <head>
    <script src="js/alignments.js"></script>
+   <script src="js/population.js"></script>
+   <script src="js/region.js"></script>
    <script src="js/underscore-min.js"> </script>
    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>
    <script type="text/javascript" src="js/loopj-jquery-tokeninput/src/jquery.tokeninput.js"></script>
@@ -162,7 +164,7 @@
       window.x = [2.5,0.5,2.2,1.9,3.1,2.3,2,1,1.5,1.1];
       window.y = [2.4, 0.7,2.9,2.2,3.0,2.7,1.6,1.1,1.6,0.9];
       window.dotFillOp = $('.dot').css('fill-opacity');
-      window.color = d3.scale.category10();      
+      window.color = d3.scale.category20();      
       
 
    </script>
@@ -222,20 +224,30 @@
       }
       
       function getStaticVcfUrl() {
-         var vcf = "'http://s3.amazonaws.com/1000genomes/release/20101123/interim_phase1_release/ALL.chr2.phase1.projectConsensus.genotypes.vcf.gz'";
+         var vcf = "-h 'http://s3.amazonaws.com/1000genomes/release/20101123/interim_phase1_release/ALL.chr2.phase1.projectConsensus.genotypes.vcf.gz'";
          var url = "http://0.0.0.0:7090?cmd=" + vcf + " "
-                 + "2:" + getMin() + "-" + getMax()
-                 + "&format=json";
+                 + "2:" + getMin() + "-" + getMax();
                  
          return encodeURI(url);
       }
       
       function getStaticVcfData() {
-         var url = getStaticVcfUrl();
+         var url = getStaticVcfUrl() + "&format=json";
          var socket = io.connect(url);
+         var samples = undefined;
          socket.on('results', function(res) {
             var results = JSON.parse(res.data);
-            if (results.length == 0) return;            
+            if (results.length == 0) return;  
+            // get samples
+            for ( var i=0; i < results.length; i++ ) {
+               if (results[i].header != undefined)
+                  samples = results.header.samples;
+               if(results[i].data != undefined) {
+                  
+               }
+            }
+            
+            
          });
          socket.emit('run', { 'url' : url })
       }
@@ -248,7 +260,8 @@
       }
       
       function getFreebayesData() {
-         var url = getFreebayesUrl() + "&format=json";
+         // var url = getFreebayesUrl() + "&format=json";
+         var url = getStaticVcfUrl();
          var socket = io.connect(url);
          var w = getVcfBoxWidth();
          // var x = d3.scale.linear()
@@ -317,8 +330,9 @@
          var socket = io.connect(url);
          socket.on('results', function(res){
             var results = JSON.parse(res.data);
-            var data = _.zip( results.ev1, results.ev2, window.population );
-            updatePcaChart(data, 750);
+            //var data = _.zip( results.ev1, results.ev2, window.population );            
+            //updatePcaChart(data, 750);
+            
          });
          socket.emit('run', { 'url' : url })
       }
@@ -329,23 +343,26 @@
                  + gds + " " 
                  + $("#ld-slider").val() + " "
                  + $("#maf-slider").val() + " "
-                 + getFreebayesUrl();
+                 + getStaticVcfUrl()
+                 + "&format=json";
          return encodeURI(url);
       }
       
+      
       function getPcaData() {
          var url = getPcaUrl();
-         var len = window.population.length
-         var initData = new Array(len);
-         while (--len >= 0) {initData[len] = [0,0,window.population[len]]}
+         window.population = window.test_populations_array;
+         var initData = _.map(window.test_populations, function(v,k) { 
+            return [0,0,k,v]; 
+         });
          initPcaChart(initData);
          var socket = io.connect(url);
          socket.on('results', function(res) {
             var results = JSON.parse(res.data);
-            var data = _.zip( results.ev1, results.ev2, window.population );
-            updatePcaChart(data, 5000);
+            updatePcaChart(results, 10000);
          });
          socket.on('end', function() {
+            d3.selectAll(".dot").style("fill-opacity", 1);
             window.dotFillOp = '1';
          });
          socket.emit('run', { 'url' : url })
@@ -364,27 +381,27 @@
          
          // x.domain( [d3.min(data, function(d) {return d[0] -1}), d3.max(data, function(d) {return d[0] + 1})] ).nice();
          // y.domain( [d3.min(data, function(d) {return d[1] -1}), d3.max(data, function(d) {return d[1] + 1})] ).nice();
-         x.domain([-0.7, 0.7]);
-         y.domain([-0.7, 0.7]);
+         x.domain([-0.1, 0.1]);
+         y.domain([-0.1, 0.1]);
              
          var dots = d3.select("#vcf-graph").selectAll(".dot");
-         var dotData = dots.data(data);
+         var dotData = dots.data(data, function(d) { return d[2]; });
          
-         dotData.exit().remove();
-         dotData.enter().append("circle")
-            .attr("class", 'dot')
-            .attr("cx", function(d) { return x(d[0]); })
-            .attr("cy", function(d) { return y(d[1]); })
-            .attr("r", 3.5)
-            .style("fill", function(d) { return window.color(d[2]); });
+         // dotData.exit().remove();
+         // dotData.enter().append("circle")
+         //    .attr("class", 'dot')
+         //    .attr("cx", function(d) { return x(d[0]); })
+         //    .attr("cy", function(d) { return y(d[1]); })
+         //    .attr("r", 3.5)
+         //    .style("fill", function(d) { return window.color(d[2]); });
 
          dots.transition()
          .ease("linear")
          .duration(duration)
          .attr("cx", function(d) { return x(d[0]); })
          .attr("cy", function(d) { return y(d[1]); })
-         .style("fill", function(d) { return window.color(d[2]); })
-         .each("end", function() { $('.dot').css('fill-opacity', window.dotFillOp); });
+         //.style("fill", function(d) { return window.color(d[2]); })
+        // .each("end", function() { $('.dot').css('fill-opacity', window.dotFillOp); });
       }
       
       function initPcaChart(data) {
@@ -408,20 +425,21 @@
 
          var svg = d3.select('#g-pca');
 
-           x.domain( [-0.7, 0.7]);
-           y.domain( [-0.7, 0.7]);
+           x.domain( [-0.1, 0.1]);
+           y.domain( [-0.1, 0.1]);
       
            svg.selectAll(".dot")
-               .data(data)
+               .data(data, function(d) { return d[2]; })
              .enter().append("circle")
                .attr("class", "dot")
                .attr("r", 3.5)
                .attr("cx", function(d) { return x(d[0]); })
                .attr("cy", function(d) { return y(d[1]); })
-               .style("fill", function(d) { return window.color(d[2]); });
+               .style("fill", function(d) { return window.color( d[3]); });
+               //.style("fill", function(d) { return window.color( window.region[d[3]]); });
 
            var legend = svg.selectAll(".legend")
-               .data(color.domain())
+               .data(window.color.domain())
              .enter().append("g")
                .attr("class", "legend")
                .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
@@ -431,7 +449,7 @@
                .attr("width", 18)
                .attr("height", 18)
                .attr('y', 5)
-               .style("fill", color);
+               .style("fill", window.color);
 
            legend.append("text")
                .attr("x", width/2 - 24)
@@ -630,7 +648,7 @@
          step2();
          
          // fire Freebayes         
-         getFreebayesData();
+//         getFreebayesData();
          
          // fire PCA
          getPcaData();

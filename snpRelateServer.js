@@ -23,6 +23,15 @@ var tool = {
    name : 'pca',
    // path: '/Users/chase/Desktop/tmp_workspace/PCAminion/test.R'
    // path: 'cat'
+   json: function(data) {
+      data = String(data);
+      var lines = data.split("\n");
+      var results = []; 
+      for (var i=0; i < lines.length; i++) {
+         results.push(lines[i].split(","));
+      }
+      return JSON.stringify(results);
+   },
    path: '/Users/chase/Tools/snpRelate/pcaStream2.R'
 };
 

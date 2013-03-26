@@ -26,12 +26,13 @@ var tool = {
       data = String(data);      
       var lines = data.split("\n");
       var numLines = lines.length;
-      var results = [];
+      var results = [];      
       for (var i=0; i < numLines; i++) {
-         var line = lines[i];
+         var line = lines[i];         
          if (line && line.charAt(0) != '#') {
             var values = line.split("\t");
-            results.push ({
+            results.push ({ 
+               data : {
                 chrom    : values[0],
                 pos      : values[1],
                 id       : values[2],
@@ -42,7 +43,17 @@ var tool = {
                 info     : values[7],
                 format   : values[8],
                 genotypes: values.slice(9, values.length)
+               }
             });
+         } else if(line.slice(0,10) == "#CHROM\tPOS") {
+            // parse header samples
+            var columns = line.spit("\t")
+            var samples = columns.slice(9, columns.length)
+            results.push({
+               header: {
+                  'samples' : samples
+               }
+            })
          }
       }
       return JSON.stringify(results);
