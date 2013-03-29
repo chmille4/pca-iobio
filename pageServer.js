@@ -17,3 +17,7 @@ app.use('/', express.static(__dirname + '/public'));
 app.get('/', function (req, res) {
   res.sendfile(__dirname + '/index.html');
 });
+
+app.get('/test', function (req, res) {
+  res.sendfile(__dirname + '/test.html');
+});

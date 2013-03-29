@@ -1,35 +1,35 @@
 window.region = {
-   GBR : 'EUR',
-   FIN : 'EUR',
-   GBR : 'EUR',
-   FIN : 'EUR',
-   CHS : 'ASN',
-   PUR : 'AMR',
-   CHS : 'ASN',
-   PUR : 'AMR',
-   CHS : 'ASN',
-   PUR : 'AMR',
-   CLM : 'AMR',
-   PUR : 'AMR',
-   CLM : 'AMR',
-   GBR : 'EUR',
-   CLM : 'AMR',
-   IBS : 'EUR',
-   CLM : 'AMR',
-   IBS : 'EUR',
-   CEU : 'EUR',
+   ASW : 'AFR',
+   LWK : 'AFR',
    YRI : 'AFR',
+   CLM : 'AMR',
+   MXL : 'AMR',
+   PUR : 'AMR',
    CHB : 'ASN',
-   YRI : 'AFR',
+   CHS : 'ASN',   
    JPT : 'ASN',
-   LWK : 'AFR',
-   JPT : 'ASN',
-   YRI : 'AFR',
-   LWK : 'AFR',
-   ASW : 'AFR',
-   MXL : 'AMR',
-   ASW : 'AFR',
-   MXL : 'AMR',
-   ASW : 'AFR',
+   CEU : 'EUR',
+   FIN : 'EUR',   
+   GBR : 'EUR',
+   IBS : 'EUR',
    TSI : 'EUR'
 }
+
+window.region_hierachy = [
+   {  
+      name     : 'AFR',
+      children : ['ASW', 'LWK', 'YRI'] 
+   },
+   {  
+      name     : 'ASN',
+      children : ['CHB','CHS','JPT']
+   },
+   { 
+      name     : 'AMR',
+      children : ['CLR', 'MXL', 'PUR']
+   },
+   { 
+      name     : 'EUR',
+      children : ['CEU', 'FIN', 'GBR', 'IBS', 'TSI'] 
+   }
+]         

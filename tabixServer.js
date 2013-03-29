@@ -22,42 +22,30 @@ var tool = {
    apiVersion : "0.1",
    name : 'tabix',
    path: '/Users/chase/Tools/tabix-0.2.6/tabix',
-   json : function(data) {
-      data = String(data);      
-      var lines = data.split("\n");
-      var numLines = lines.length;
-      var results = [];      
-      for (var i=0; i < numLines; i++) {
-         var line = lines[i];         
-         if (line && line.charAt(0) != '#') {
-            var values = line.split("\t");
-            results.push ({ 
+   json : function(line) { 
+      if( line[line.length-1] == "\n" ) line = line.slice(0,-1);
+      var fields = line.split("\t");
+      if (line && line.charAt(0) != '#') {
+         return JSON.stringify(
+            { 
                data : {
-                chrom    : values[0],
-                pos      : values[1],
-                id       : values[2],
-                ref      : values[3],
-                alt      : values[4],
-                qual     : values[5],
-                filter   : values[6],
-                info     : values[7],
-                format   : values[8],
-                genotypes: values.slice(9, values.length)
+                chrom    : fields[0],
+                pos      : fields[1],
+                id       : fields[2],
+                ref      : fields[3],
+                alt      : fields[4],
+                qual     : fields[5],
+                filter   : fields[6],
+                info     : fields[7],
+                format   : fields[8],
+                genotypes: fields.slice(9, fields.length)
                }
-            });
-         } else if(line.slice(0,10) == "#CHROM\tPOS") {
-            // parse header samples
-            var columns = line.spit("\t")
-            var samples = columns.slice(9, columns.length)
-            results.push({
-               header: {
-                  'samples' : samples
-               }
-            })
-         }
-      }
-      return JSON.stringify(results);
-   }};
+            }
+         );
+      } else if(line.slice(0,6) == "#CHROM") 
+         return JSON.stringify( {header: { samples : fields.slice(9, fields.length) } } );
+   }
+};
 
 // add tool to minion server
 minion.addTool(tool);

@@ -24,11 +24,11 @@ var tool = {
    // path: '/Users/chase/Desktop/tmp_workspace/PCAminion/test.R'
    // path: 'cat'
    json: function(data) {
-      data = String(data);
-      var lines = data.split("\n");
+      var samples = data.split("\t");
+      // console.log(JSON.stringify(samples));
       var results = []; 
-      for (var i=0; i < lines.length; i++) {
-         results.push(lines[i].split(","));
+      for (var i=0; i < samples.length; i++) {
+         results.push(samples[i].split(","));
       }
       return JSON.stringify(results);
    },
