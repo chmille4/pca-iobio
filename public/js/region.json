@@ -1,0 +1,100 @@
+   { "name" : "1000G",
+      "level" : "0",
+      "root" : "true",
+      "children" : [
+      {
+       "name"  : "AFR",
+       "level" : "0", 
+       "children": [
+        { 
+           "name"  : "ASW",
+           "level" : 2,
+           "vcf"   : []
+        },
+        { 
+           "name"  : "LWK",
+           "level" : 1,
+           "vcf"   : []
+        },
+        { 
+           "name"  : "YRI",
+           "level" : 2,
+           "vcf"   : []
+        }
+       ]
+      },
+      {
+       "name"  : "AMR",
+       "level" : "0", 
+       "children": [
+        { 
+           "name"  : "CLR",
+           "level" : 1,
+           "vcf"   : []
+        },
+        { 
+           "name"  : "MXL",
+           "level" : 2,
+           "vcf"   : []
+        },
+        { 
+           "name"  : "PUR",
+           "level" : 1,
+           "vcf"   : []
+        }
+       ]
+      },
+      {
+       "name"  : "ASN",
+       "level" : "0", 
+       "children": [
+        { 
+           "name"  : "CHB",
+           "level" : 2,
+           "vcf"   : []
+        },
+        { 
+           "name"  : "CHS",
+           "level" : 1,
+           "vcf"   : []
+        },
+        { 
+           "name"  : "JPT",
+           "level" : 2,
+           "vcf"   : [] 
+        }
+       ]
+      },
+      {
+       "name"  : "EUR",
+       "level" : "0", 
+       "children": [
+        { 
+           "name"  : "CEU",
+           "level" : 1,
+           "vcf"   : []
+        },
+        { 
+           "name"  : "FIN",
+           "level" : 2,
+           "vcf"   : []
+        },
+        { 
+           "name"  : "GBR",
+           "level" : 1,
+           "vcf"   : []
+        },
+        { 
+           "name"  : "IBS",
+           "level" : 2,
+           "vcf"   : []
+        },
+        { 
+           "name"  : "TSI",
+           "level" : 1,
+           "vcf"   : []
+        }
+       ]
+      }   
+   ]
+  }
