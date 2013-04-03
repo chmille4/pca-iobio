@@ -21,7 +21,18 @@ server.listen(8000);
 var tool = {
    apiVersion : "0.1",
    name : 'gds2pca',
-   path: '/Users/chase/Tools/snpRelate/pca.R'
+   path: '/Users/chase/Tools/snpRelate/pca.R',
+   json: function(data) {
+      var samples = data.split("\t");
+      // console.log(JSON.stringify(samples));
+      var results = []; 
+      for (var i=0; i < samples.length; i++) {
+         var s = samples[i].split(",");
+         results.push([ parseFloat(s[0]), parseFloat(s[1]), s[2] ]);
+      }
+      return JSON.stringify(results);
+   },
+   
 };
 
 // add tool to minion server
