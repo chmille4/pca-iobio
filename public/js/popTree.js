@@ -1,4 +1,4 @@
-function createPopTree(jsonUrl, svg, m, w, h) {
+function createPopTree(jsonUrl, svg, m, w, h, onClickCallback) {
    var i=0;
    var root;
    
@@ -24,12 +24,6 @@ function createPopTree(jsonUrl, svg, m, w, h) {
        }
      }
 
-     // Initialize the display to show a few nodes.
-     // root.children.forEach(toggleAll);
-     // toggle(root.children[1]);
-     // toggle(root.children[1].children[2]);
-     // toggle(root.children[9]);
-     // toggle(root.children[9].children[0]);
 
      update(root);
      // update(roots[1])
@@ -53,7 +47,7 @@ function createPopTree(jsonUrl, svg, m, w, h) {
          .attr("class", function(d) { if (d.root) return "root node"; else return d.level > 0 ? "node pop" : "node"; })
          .attr("transform", function(d) { return "translate(" + source.x0 + "," + source.y0 + ")"; })
          .attr("id", function(d) { return d.name + "-vcf-graph"})
-         .on("click", function(d) { toggle(d); update(d); });
+         .on("click", function(d) { toggle(d); update(d); onClickCallback(d); });
 
      nodeEnter.append("svg:circle")
          .attr("r", 1e-6)
