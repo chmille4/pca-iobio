@@ -15,8 +15,6 @@
    <link rel="stylesheet" href="js/loopj-jquery-tokeninput/styles/token-input.css" type="text/css" />
    <link rel="stylesheet" href="js/loopj-jquery-tokeninput/styles/token-input-custom.css" type="text/css" />
    <link href='http://fonts.googleapis.com/css?family=Quicksand:300,400' rel='stylesheet' type='text/css'>
-   <script src="js/tipsy.js"></script>
-   <link rel="stylesheet" href="css/tipsy.css" type="text/css" />
    <style>
       body {
          font-family: quicksand;
@@ -92,10 +90,16 @@
       }
       
       #graph-container {
+         position: absolute;
+         top: 45px;
+         left: 0px;
+         right: 0px;
+         bottom: 0px;
+/*         margin-top: 50px;
          margin-left:auto;
          margin-right:auto;
          width: 100%;
-         height: 80%;
+         height: 80%;*/
       }
       
       #vcf-graph {
@@ -156,23 +160,24 @@
            
            // tmp do graph          
           
-           var min = 1000000;
-           var max = 1050000;
-           $("#min-nt").val(min);
-           $("#max-nt").val(max);
+           var range = '1000000nt - 1050000nt';
+           $("#range-nt").val(range);
            
 //           var dataset = $('#bam-url').tokenInput("get");
 
+            window.popTreeHeight = 600;
            var m = [20, 120, 20, 120],
                w = $("#graph-container").css('width').split('px')[0] - m[1] - m[3],
-               h = 600 - m[0] - m[2];
+               h = window.popTreeHeight - m[0] - m[2];
+               
+            
 
            var svg = d3.select("#graph-container").append("svg:svg")
-              .attr("width", w + m[1] + m[3])
-              .attr("height", h + m[0] + m[2])
+              .attr("width", '100%')
+              .attr("height", "100%")
               .attr("id", "vcf-graph")
 
-           createPopTree("js/region.json", svg,m, w, h);
+           createPopTree("js/region.json", svg,m, w, h, function() {getPcaGdsData();});
            
            // var w = $("#graph-container").css('width').split('px')[0],
            //     h = 400;
@@ -204,8 +209,22 @@
    </script>
    <script>
       function getChromosome() {return (11);}
-      function getMin() {return parseInt($("#min-nt").val())}
-      function getMax() {return parseInt($("#max-nt").val())}
+      function getMin() {
+         var range = $("#range-nt").val();
+         // remove nt's and white space
+         range = range.replace(/\s+|nt/g, '');
+         // split min and max string and keep only min
+         var min = range.split('-')[0];
+         return parseInt(min);  
+      };
+      function getMax() {
+         var range = $("#range-nt").val();
+         // remove nt's and white space
+         range = range.replace(/\s+|nt/g, '');
+         // split min and max string and keep only max
+         var max = range.split('-')[1];
+         return parseInt(max);  
+      };
       function getVcfBoxWidth() { 
          var w = d3.select('#vcf-graph').attr('width');
          var dl = $('#bam-url').tokenInput("get").length;
@@ -228,34 +247,34 @@
          window.populationArray = _.map( pops, function(elem) { elem.active = true; return elem; });
          return window.populationArray;
       }
-      function getBams() {
-         var bamGroups = _.filter(getPopulationArray(), function(b){ return b.active; });
-         var numFiles = 4;
-         window.population = [];
-         var bams = [];
-         for ( var i=0; i < bamGroups.length; i++) {
-            var files = _.filter(window.alignments, function(elem) { 
-               if ( elem.indexOf('chrom'+getChromosome()) == -1 ) return false;
-               if ( elem.indexOf(bamGroups[i].name)  != -1 ) return true; 
-            });
-            bams = bams.concat( files.slice(0,numFiles) );
-            for( var j=0; j< numFiles; j++) window.population.push( bamGroups[i].name );
-         }         
-         return bams;
-      }
-      function getBamDataUrl() {
-         var bams = getBams();
-         var url = "http://0.0.0.0:8030?cmd="
-         // for (var i=0; i < bams.length; i++) {
-         //    url += " -in <(samtools view -u " + bams[i] + " 11:108473-189473)"
-         // }
-         url += getChromosome() + ":" + getMin() + "-" + getMax();
-         for (var i=0; i < bams.length; i++) {
-            url += " '" + bams[i] + "'";
-         }
-         
-         return encodeURI(url);
-      }
+      // function getBams() {
+      //    var bamGroups = _.filter(getPopulationArray(), function(b){ return b.active; });
+      //    var numFiles = 4;
+      //    window.population = [];
+      //    var bams = [];
+      //    for ( var i=0; i < bamGroups.length; i++) {
+      //       var files = _.filter(window.alignments, function(elem) { 
+      //          if ( elem.indexOf('chrom'+getChromosome()) == -1 ) return false;
+      //          if ( elem.indexOf(bamGroups[i].name)  != -1 ) return true; 
+      //       });
+      //       bams = bams.concat( files.slice(0,numFiles) );
+      //       for( var j=0; j< numFiles; j++) window.population.push( bamGroups[i].name );
+      //    }         
+      //    return bams;
+      // }
+      // function getBamDataUrl() {
+      //      var bams = getBams();
+      //      var url = "http://0.0.0.0:8030?cmd="
+      //      // for (var i=0; i < bams.length; i++) {
+      //      //    url += " -in <(samtools view -u " + bams[i] + " 11:108473-189473)"
+      //      // }
+      //      url += getChromosome() + ":" + getMin() + "-" + getMax();
+      //      for (var i=0; i < bams.length; i++) {
+      //         url += " '" + bams[i] + "'";
+      //      }
+      //      
+      //      return encodeURI(url);
+      //   }
       
       function getStaticVcfUrl() {
          var vcf = "-h 'http://s3.amazonaws.com/1000genomes/release/20101123/interim_phase1_release/ALL.chr2.phase1.projectConsensus.genotypes.vcf.gz'";
@@ -265,7 +284,29 @@
          return encodeURI(url);
       }
       
+      function getActiveVcfs() {
+         var limit = 50;
+         var vcfsToKeep = "";
+         var activePopArrays = d3.selectAll("g .pop").filter(function(d) { return !d._vcf; }).data();
+         var activePops = _.pluck(activePopArrays, 'name');
+
+         _.each(activePops, function(pop) { 
+            vcfsToKeep += window.pop2id[pop].slice(0,limit).join(' ') + ' '; 
+         });
+         
+         return vcfsToKeep.trim();
+      }
+      
+      function getVcfKeepUrl() {
+         var url = 'http://0.0.0.0:7080?cmd= '
+                 + getStaticVcfUrl() + ' '
+                 + getActiveVcfs();
+
+         return encodeURI(url);
+      }
+      
       function getStaticVcfData() {
+        // var url = getVcfKeepUrl() + "&format=json&parseByLine=true";
          var url = getStaticVcfUrl() + "&format=json&parseByLine=true";
          var socket = io.connect(url);
          var samples = undefined;
@@ -351,68 +392,19 @@
          });
       }
       
-      function getFreebayesUrl() {
-         var url = "http://0.0.0.0:8080?cmd=-f /Users/chase/Tools/freebayes/data/hs_ref_chr"
-                  + getChromosome() + ".fa"
-                  + ' ' + getBamDataUrl();
-         return encodeURI(url);
-      }
-      
-      function getFreebayesData() {
-         // var url = getFreebayesUrl() + "&format=json";
-         var url = getStaticVcfUrl();
-         var socket = io.connect(url);
-         var w = getVcfBoxWidth();
-         // var x = d3.scale.linear()
-         //    .range([2, w-2])
-         //    .domain([getMin(), getMax()]);
-         var x = d3.scale.quantize()
-            .range(d3.range(2, w-2,5))
-            .domain([getMin(), getMax()]);
-         
-         var variants = {};
-         socket.on('results', function(res) {
-            var results = JSON.parse(res.data);
-            if ( results.length == 0 ) return;
-            for (var j=0; j < results.length; j++) {
-               var result = results[j];
-               var yi = {};
-               for (var i=0; i<result.genotypes.length; i++) {
-                  var geno = result.genotypes[i];
-                  if( geno[0] != 0 || geno[2] != 0) {
-                     var pop = window.population[i];
-                     var group = d3.select("#" + pop + "-vcf-graph");
-                     var active = group.data()[0].active;
-                     if ( variants[pop] == undefined ) variants[pop] = [];
-                     variants[pop].push( parseInt(result.pos) );
-                     if(yi[pop] == undefined) yi[pop] = -1;
-                     yi[pop] += 1;
-                     group.selectAll("circle")
-                           .data(variants[pop])
-                        .enter().append('circle')
-                           .attr("cx", function(d) { return x(d); })
-                           .attr("cy", yi[pop]*5 + 5)
-                           .attr("r", 2)
-                           .style("fill", function(d) { if(active) return window.color(pop); else return 'rgb(200,200,200)'; })
-                           .style("fill-opacity", 0.2);
-                  }
-               }
-            }
-         });
-         socket.emit('run', { 'url' : url })
-      }
-      
       function getSampleIdList() {
-         var samples = _.map(getBams(), function(b) { return b.match(/data\/(\S+)\/alignment/)[1]; });
+         // var samples = _.map(getBams(), function(b) { return b.match(/data\/(\S+)\/alignment/)[1]; });
+         var activePops = d3.selectAll("g .pop").filter(function(d) { return !d._vcf; }).data();
+         var pops
          return samples
       }
       
       function getPcaGdsName() {
-         var name = "http://0.0.0.0:8080?cmd=-f /Users/chase/Tools/freebayes/data/hs_ref_chr"
-                  + getChromosome() + ".fa "
-                  + _.pluck($('#bam-url').tokenInput("get"), "name").sort().join(" ");
+         // var name = "http://0.0.0.0:8080?cmd=-f /Users/chase/Tools/freebayes/data/hs_ref_chr"
+         //                   + getChromosome() + ".fa "
+         //                   + _.pluck($('#bam-url').tokenInput("get"), "name").sort().join(" ");
          
-         return  encodeURI( encodeURIComponent(name) + '.gds' );
+         return  'chr' + getChromosome() + '_' + getMin() + '-' + getMax() + ".gds";
       }
       
       function getPcaGdsUrl() {
@@ -420,7 +412,9 @@
                  + getPcaGdsName() + " "
                  + $("#ld-slider").val() + " "
                  + $("#maf-slider").val() + " "
-                 + getSampleIdList().join(",");
+                 + getActiveVcfs()
+                 + "&format=json"
+                 + "&parseByLine=true";
          return encodeURI(url);
       }
       
@@ -429,8 +423,7 @@
          var socket = io.connect(url);
          socket.on('results', function(res){
             var results = JSON.parse(res.data);
-            //var data = _.zip( results.ev1, results.ev2, window.population );            
-            //updatePcaChart(data, 750);
+            updatePcaChart(results, 750);
             
          });
          socket.emit('run', { 'url' : url })
@@ -442,7 +435,7 @@
                  + gds + " " 
                  + $("#ld-slider").val() + " "
                  + $("#maf-slider").val() + " "
-                 + getStaticVcfUrl()
+                 + getVcfKeepUrl()//getStaticVcfUrl() //
                  + "&format=json"
                  + "&parseByLine=true";
          return encodeURI(url);
@@ -474,34 +467,52 @@
              height = 500 - margin.top - margin.bottom;
 
          var x = d3.scale.linear()
-             .range([-window.pcaBoxW/2,  window.pcaBoxW/2]);
+             .range([-window.pcaBoxW/2 + 5,  window.pcaBoxW/2 - 5]);
 
          var y = d3.scale.linear()
-             .range([$("#vcf-graph").height()/2 * 0.8 - 5, 0]);
-         
-         // x.domain( [d3.min(data, function(d) {return d[0] -1}), d3.max(data, function(d) {return d[0] + 1})] ).nice();
-         // y.domain( [d3.min(data, function(d) {return d[1] -1}), d3.max(data, function(d) {return d[1] + 1})] ).nice();
-         x.domain([-0.1, 0.1]);
-         y.domain([-0.1, 0.1]);
+             .range([$("#vcf-graph").height()/2 * 0.8 - 5, 5]);
              
-         var dots = d3.select("#vcf-graph").selectAll(".dot");
+         
+         x.domain( [d3.min(data, function(d) {return d[0]}), d3.max(data, function(d) {return d[0]})] );
+         y.domain( [d3.min(data, function(d) {return d[1]}), d3.max(data, function(d) {return d[1]})] );
+         
+         // filter data for null values and newlines
+         for( var i=0; i < data.length; i++) {
+            // check id for trainling newline
+            if(data[i][2][ data[i][2].length-1 ] == "\n")
+               data[i][2] = data[i][2].trim();
+            else if (data[i][2] == "") {
+               data.splice(i,1)
+               i -= 1;
+            }            
+         }
+             
+         var dots = d3.select("#g-pca").selectAll(".dot");
          var dotData = dots.data(data, function(d) { return d[2]; });
          
-         // dotData.exit().remove();
-         // dotData.enter().append("circle")
-         //    .attr("class", 'dot')
-         //    .attr("cx", function(d) { return x(d[0]); })
-         //    .attr("cy", function(d) { return y(d[1]); })
-         //    .attr("r", 3.5)
-         //    .style("fill", function(d) { return window.color(d[2]); });
+         dotData.enter().append("circle")
+            .attr("class", 'dot')
+            .attr("cx", function(d) { return x(d[0]); })
+            .attr("cy", function(d) { return y(d[1]); })
+            .attr("r", 3.5)
+            .style("fill-opacity", 1)
+            .style("fill", function(d) { return window.color( window.region[ window.test_populations[d[2]] ]); });
 
+         
          dots.transition()
-         .ease("linear")
-         .duration(duration)
-         .attr("cx", function(d) { return x(d[0]); })
-         .attr("cy", function(d) { return y(d[1]); })
+            .ease("linear")
+            .duration(duration)
+            .attr("cx", function(d,i) { return x(d[0]); })
+            .attr("cy", function(d) { return y(d[1]); });
+         
+         
+         // dots.transition()
+         //    .ease("bounce")
+         //    .attr("r", 3.5);
          //.style("fill", function(d) { return window.color(d[2]); })
         // .each("end", function() { $('.dot').css('fill-opacity', window.dotFillOp); });
+        
+        dotData.exit().remove();
       }
       
       function initPcaChart(data) {
@@ -543,7 +554,7 @@
                            div.transition()        
                                .duration(100)      
                                .style("opacity", .9);      
-                           div .html("Sample: " + d[2])                                  
+                           div .html("Sample: " + d[2] + " Region: " + d[3])                                  
                                .style("left", (d3.event.pageX) + "px")     
                                .style("top", (d3.event.pageY - 24) + "px");    
                            })                  
@@ -560,14 +571,14 @@
                .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
 
            legend.append("rect")
-               .attr("x", width/2 - 18)
+               .attr("x", window.pcaBoxW/2 - 24)
                .attr("width", 18)
                .attr("height", 18)
                .attr('y', 5)
                .style("fill", window.color);
 
            legend.append("text")
-               .attr("x", width/2 - 24)
+               .attr("x", window.pcaBoxW/2 - 30)
                .attr("y", 14)
                .attr("dy", ".35em")
                .style("text-anchor", "end")
@@ -897,18 +908,21 @@
       
       function step2() {         
          // step 1 hide controls
-         $(".step1-sub-steps").slideUp("slow");         
-         
-         $(".step1").css("color", "rgb(180,180,180)")
-         $(".step2").css("color", "black")
-         $(".step2-sub-steps").slideDown("slow");  
-         var origH = window.h
-         $("#vcf-graph").css("height", $("#app").css("height"));
+         // $(".step1-sub-steps").slideUp("slow");         
+         // 
+         // $(".step1").css("color", "rgb(180,180,180)")
+         // $(".step2").css("color", "black")
+         // $(".step2-sub-steps").slideDown("slow"); 
+         $("#pca-settings").css('visibility', 'visible');
+         $("#pca-button").css('visibility', 'hidden');
+          
+         var origH = 600
+        // $("#vcf-graph").css("height", $("#app").css("height"));
          
          var svgW = $("#vcf-graph").width();
          var svgH = $("#vcf-graph").height();
          window.pcaBoxW = svgW - 220;
-         var boxH =  0.8 * (svgH / 2);
+         var boxH =  (svgH / 2) * 0.95;
          var padding = 5;
          
          var svg = d3.select("#vcf-graph");
@@ -917,7 +931,7 @@
          
             var g = svg.append("g")
                .attr("id", "g-pca")
-               .attr("transform", 'translate(' + parseInt(svgW/2) + ',' + parseInt(origH/2 + window.vcfBoxHeight) + ')');
+               .attr("transform", 'translate(' + parseInt(svgW/2) + ',' + parseInt(0) + ')');
             
             // g.append("foreignObject")
             //     .attr("width", window.pcaBoxW)
@@ -944,7 +958,7 @@
 //         document.getElementById('fo-pca-sliders').style.display = 'block';   
          g.transition()
             .duration(750)
-            .attr('transform', 'translate(' + parseInt(svgW/2) + ',' + parseInt(svgH - boxH - padding) + ')');
+            .attr('transform', 'translate(' + parseInt(svgW/2) + ',' + parseInt(svgH/2) + ')');
             
          gr.transition()
             .duration(750)
@@ -959,25 +973,25 @@
          
          var diagonal = d3.svg.diagonal();                                
       
-         var vBoxW = getVcfBoxWidth();
-         var vpadding = window.padding;
-         
-         svg.selectAll(".lower-path")
-            .transition()
-               .duration(750)
-               .attr('d', function(d,i) { return diagonal({source:{x:i*vBoxW + vBoxW/2 + vpadding/2 + i*(vpadding), y:origH/2 + window.vcfBoxHeight}, target:{x:svgW/2,y:svgH-boxH-padding}}) });
-         
-         svg.selectAll(".lower-path")
-               .data( getPopulationArray() )
-            .enter().append("path")
-               .attr("class", "lower-path")
-               .style('stroke',  "rgb(100,100,100)")
-               .style('stroke-width', '2px')
-               .style("fill", "none")
-               .attr('d', function(d,i) { return diagonal({source:{x:i*vBoxW + vBoxW/2 + vpadding/2 + i*(vpadding), y:origH/2 + window.vcfBoxHeight}, target:{x:i*vBoxW + vBoxW/2 + vpadding/2 + i*(vpadding), y:origH/2 + window.vcfBoxHeight}}) })
-               .transition()
-                  .duration(750)
-                  .attr('d', function(d,i) { return diagonal({source:{x:i*vBoxW + vBoxW/2 + vpadding/2 + i*(vpadding), y:origH/2 + window.vcfBoxHeight}, target:{x:svgW/2,y:svgH-boxH-padding}}) });
+         // var vBoxW = 50;
+         // var vpadding = window.padding;
+         // 
+         // svg.selectAll(".lower-path")
+         //    .transition()
+         //       .duration(750)
+         //       .attr('d', function(d,i) { return diagonal({source:{x:i*vBoxW + vBoxW/2 + vpadding/2 + i*(vpadding), y:origH/2 + window.vcfBoxHeight}, target:{x:svgW/2,y:svgH-boxH-padding}}) });
+         // 
+         // svg.selectAll(".lower-path")
+         //       .data( getPopulationArray() )
+         //    .enter().append("path")
+         //       .attr("class", "lower-path")
+         //       .style('stroke',  "rgb(100,100,100)")
+         //       .style('stroke-width', '2px')
+         //       .style("fill", "none")
+         //       .attr('d', function(d,i) { return diagonal({source:{x:i*vBoxW + vBoxW/2 + vpadding/2 + i*(vpadding), y:origH/2 + window.vcfBoxHeight}, target:{x:i*vBoxW + vBoxW/2 + vpadding/2 + i*(vpadding), y:origH/2 + window.vcfBoxHeight}}) })
+         //       .transition()
+         //          .duration(750)
+         //          .attr('d', function(d,i) { return diagonal({source:{x:i*vBoxW + vBoxW/2 + vpadding/2 + i*(vpadding), y:origH/2 + window.vcfBoxHeight}, target:{x:svgW/2,y:svgH-boxH-padding}}) });
             
          
       }
@@ -1022,17 +1036,42 @@
 
 <body>
    
-   <div id="app" style="position:absolute; left:0px; top:0px; bottom:0px; right:20%">
+   <div id="app" style="position:absolute; left:0px; top:0px; bottom:0px; right:0px">
       <div id="title" >
          PCA<span style="color:#f36a22">gr</span>
          <div id="subtitle">1000G realtime principal <span style="letter-spacing:2px">component analysis</span></div>
 
       </div>
-      <div id="step1-controls" class="step1-sub-steps" style="margin-top: 105px">
+      <div id="step1-controls" class="step1-sub-steps" style="margin-top: 20px">
          <div style="position:relative; width: 400px; margin-left: auto; margin-right: auto">            
-            <input id="min-nt" class="nt-range" type="text"  style="width:90px; position:absolute; top: 5px; left: 0px"/>
-            <input id="bam-url" type='text'/>            
-            <input id="max-nt" class="nt-range" type="text"  style="width:90px; position:absolute; top: 5px; right: 0px"/>
+            <select id="chromosome" style="width:65px; position:absolute; top: 5px; left: 0px">
+              <option value="1">Chr1</option>
+              <option value="2">Chr2</option>
+              <option value="3">Chr3</option>
+              <option value="4">Chr4</option>
+              <option value="5">Chr5</option>
+              <option value="6">Chr6</option>
+              <option value="7">Chr7</option>
+              <option value="8">Chr8</option>
+              <option value="9">Chr9</option>
+              <option value="10">Chr10</option>
+              <option value="11">Chr11</option>
+              <option value="12">Chr12</option>
+              <option value="13">Chr13</option>
+              <option value="14">Chr14</option>
+              <option value="15">Chr15</option>
+              <option value="16">Chr16</option>
+              <option value="17">Chr17</option>
+              <option value="18">Chr18</option>
+              <option value="19">Chr19</option>
+              <option value="20">Chr20</option>
+              <option value="21">Chr21</option>
+              <option value="22">Chr22</option>
+              <option value="x">ChrX</option>
+              <option value="y">ChrY</option>
+            </select>
+            <div style="width:150px; position:absolute; top: 6px; left: 80px">1000G VCF</div>
+            <input id="range-nt" class="nt-range" type="text"  style="width:150px; position:absolute; top: 5px; left: 180px"/>
          </div>
          <!-- <div id="sliders-freebayes" style="position:relative; width: 400px; margin-left: auto; margin-right: auto;">
             <input type="range" min="-10" max="10" step="0.20"  style="position:absolute; top: 5px; left: 0px"/>
@@ -1040,35 +1079,43 @@
             <input type="range" min="-10" max="10" step="0.20"  style="position:absolute; top: 25px; left: 0px"/>
             <input type='range' min="0" max="100" style="position:absolute; top: 25px; right: 0px"/>
          </div> -->
-      </div>
+      </div>      
       <div id="graph-container"></div>
+      <div id="pca-button" onClick="startPca()" style=" height:60px; border-radius:44px; border: 1px solid rgb(180,180,180);text-align:center; line-height: 55px; background-color: #990E00; color: white; font-size: 40px; cursor:pointer; position:absolute; top:60%; left:50%; margin-left:-200px; width: 400px">Start PCA</div>
+      <div id="pca-settings" style="position:absolute; margin-left:-250px; left:50%; top:49% ;width:500px; visibility:hidden">
+         <span style="position:absolute; top: 3px; left: 0px">MAF</span>
+         <input id="maf-slider" onmouseup="getPcaGdsData()" value="0.03" type="range" min="0" max="0.1" step="0.01" style="position:absolute; top: 5px; left: 34px"/>
+         <input id="ld-slider" onmouseup="getPcaGdsData()" value="4" type='range' min="0" max="10" step="0.1" style="position:absolute; top: 5px; right: 28px; height: 10px"/>
+         <span style="position:absolute; top: 2px; right: 0px">LD</span>
+      </div>
+            
 
    </div>
-   <div id="steps" style="position:absolute; right:0px; top:0px; bottom:0px; left:78%">
-         <div class="step step1" style="margin-top: 20px">
-            <h1 onClick="step1()">1. Choose</h1>
-            <div class="step1-sub-steps">
-                <div style=" margin-top:25px; margin-left: -220px; margin-bottom: -36px"><-------------------------------</div>
-                <div class="sub-step">Choose 1000G Populations<img src="images/info.png"/ style="height:20px; vertical-align:text-bottom"/></div>
-                <div style=" margin-top:35px; margin-left: -220px; margin-bottom: -36px"><-------------------------------</div>
-               <div class="sub-step">Set Variant Calling Params<img src="images/info.png"/ style="height:20px; vertical-align:text-bottom"/></div>
-                     <div id="pca-button" onClick="startPca()" style="margin-left: 20px; margin-right: 20px; margin-top: 30px; height:30px; border-radius:44px; border: 1px solid rgb(180,180,180);text-align:center; line-height: 30px; background-color: #990E00; color: white; font-size: 20px; cursor:pointer">Start PCA</div>
-            </div>
-         </div>
-         <div class="step step2" style="margin-top: 248px; color: rgb(180,180,180)">
-            <h1 onClick="step2();">2. Play</h2>
-               <div class="step2-sub-steps" style="display: none">
-                  <div style=" margin-top:25px; margin-left: -220px; margin-bottom: -36px"><-------------------------------</div>  
-                  <div class="sub-step">Play with PCA Params<img src="images/info.png"/ style="height:20px; vertical-align:text-bottom"/></div>
-                  <div  style="position:relative; width: 450px; margin-top: -37px; margin-left: -245%">
-                     <span style="position:absolute; top: 3px; left: 0px">MAF</span>
-                     <input id="maf-slider" onmouseup="getPcaGdsData()" value="0.03" type="range" min="0" max="0.1" step="0.01" style="position:absolute; top: 5px; left: 34px"/>
-                     <input id="ld-slider" onmouseup="getPcaGdsData()" value="4" type='range' min="0" max="10" step="0.1" style="position:absolute; top: 5px; right: 28px; height: 10px"/>
-                     <span style="position:absolute; top: 2px; right: 0px">LD</span>
-                  </div>
-               </div>
-         </div>
-      </div>
+   <!-- <div id="steps" style="position:absolute; right:0px; top:0px; bottom:0px; left:78%">
+           <div class="step step1" style="margin-top: 20px">
+              <h1 onClick="step1()">1. Choose</h1>
+              <div class="step1-sub-steps">
+                  <div style=" margin-top:25px; margin-left: -220px; margin-bottom: -36px"><-------------------------------</div>
+                  <div class="sub-step">Choose 1000G Populations<img src="images/info.png"/ style="height:20px; vertical-align:text-bottom"/></div>
+                  <div style=" margin-top:35px; margin-left: -220px; margin-bottom: -36px"><-------------------------------</div>
+                 <div class="sub-step">Set Variant Calling Params<img src="images/info.png"/ style="height:20px; vertical-align:text-bottom"/></div>
+                       <div id="pca-button" onClick="startPca()" style="margin-left: 20px; margin-right: 20px; margin-top: 30px; height:30px; border-radius:44px; border: 1px solid rgb(180,180,180);text-align:center; line-height: 30px; background-color: #990E00; color: white; font-size: 20px; cursor:pointer">Start PCA</div>
+              </div>
+           </div>
+           <div class="step step2" style="margin-top: 248px; color: rgb(180,180,180)">
+              <h1 onClick="step2();">2. Play</h2>
+                 <div class="step2-sub-steps" style="display: none">
+                    <div style=" margin-top:25px; margin-left: -220px; margin-bottom: -36px"><-------------------------------</div>  
+                    <div class="sub-step">Play with PCA Params<img src="images/info.png"/ style="height:20px; vertical-align:text-bottom"/></div>
+                    <div  style="position:relative; width: 450px; margin-top: -37px; margin-left: -245%">
+                       
+                       <input id="maf-slider" onmouseup="getPcaGdsData()" value="0.03" type="range" min="0" max="0.1" step="0.01" style="position:absolute; top: 5px; left: 34px"/>
+                       <input id="ld-slider" onmouseup="getPcaGdsData()" value="4" type='range' min="0" max="10" step="0.1" style="position:absolute; top: 5px; right: 28px; height: 10px"/>
+                       <span style="position:absolute; top: 2px; right: 0px">LD</span>
+                    </div>
+                 </div>
+           </div>
+        </div> -->
    
    
 </body>
