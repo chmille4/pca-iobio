@@ -17,10 +17,10 @@ function createPopTree(jsonUrl, svg, m, w, h, onClickCallback) {
      root.x0 = h / 2;
      root.y0 = 0;
 
-     function toggleAll(d) {
+     function toggleAll(d, toggleFunc) {
        if (d.children) {
          d.children.forEach(toggleAll);
-         toggle(d);
+         toggleFunc(d);
        }
      }
 
@@ -47,7 +47,7 @@ function createPopTree(jsonUrl, svg, m, w, h, onClickCallback) {
          .attr("class", function(d) { if (d.root) return "root node"; else return d.level > 0 ? "node pop" : "node"; })
          .attr("transform", function(d) { return "translate(" + source.x0 + "," + source.y0 + ")"; })
          .attr("id", function(d) { return d.name + "-vcf-graph"})
-         .on("click", function(d) { toggle(d); update(d); onClickCallback(d); });
+         .on("click", function(d) { toggle(d);  update(d); onClickCallback(d);  });
 
      nodeEnter.append("svg:circle")
          .attr("r", 1e-6)
@@ -60,9 +60,13 @@ function createPopTree(jsonUrl, svg, m, w, h, onClickCallback) {
          .text(function(d) { return d.name; })
          .style("fill-opacity", 1e-6);
       
+      nodeEnter.append("svg:g")
+         .attr("class", "bars")
+      
       nodeEnter.filter(".pop").append("svg:rect")
          .attr("x", 0)
          .attr("y", 0)
+         .attr("class", "rect-container")
          .attr("width", 1e-6)
          .attr("height", 1e-6)
          .style("stoke-opacity", 1e-6);
@@ -80,14 +84,17 @@ function createPopTree(jsonUrl, svg, m, w, h, onClickCallback) {
          .style("fill-opacity", 1);
 
      var numBoxesPerLevel = nodeUpdate.selectAll("rect").length / 2;
-     nodeUpdate.select("rect")
+     nodeUpdate.select(".rect-container")
         .attr("x", w / numBoxesPerLevel / -2)
         .attr("y", 8)
         .attr("width", w / numBoxesPerLevel )
         .attr("height", 50)
         .attr("stroke-opacity", 1);
+     
+     nodeUpdate.select(".bars").filter(function(d) {return d.vcf;} )
+         .attr("transform", "scale(1,1)");
   
-     nodeUpdate.filter(function(d) { return d._vcf; }).select("rect")
+     nodeUpdate.filter(function(d) { return d._vcf; }).select(".rect-container")
         .attr("x", 0)
         .attr("y", 0)
         .attr("width", 1e-6)
@@ -98,7 +105,6 @@ function createPopTree(jsonUrl, svg, m, w, h, onClickCallback) {
      var nodeExit = node.exit().transition()
          .duration(duration)
          .attr("transform", function(d) { return "translate(" + source.x + "," + source.y + ")"; })
-         .remove();
 
      nodeExit.select("circle")
          .attr("r", 1e-6);
@@ -106,11 +112,13 @@ function createPopTree(jsonUrl, svg, m, w, h, onClickCallback) {
      nodeExit.select("text")
          .style("fill-opacity", 1e-6);
 
-     nodeExit.select("rect")
+     nodeExit.select(".rect-container")
          .attr("width", 1e-6)
          .attr("height", 1e-6)
          .attr("x", 0)
          .attr("fill-opacity", 1e-6)
+    nodeExit.select(".bars")
+      .attr("transform", "scale(0,0)")
 
   
      // Update the links…
@@ -167,5 +175,27 @@ function createPopTree(jsonUrl, svg, m, w, h, onClickCallback) {
        d.vcf = d._vcf;
        d._vcf = null;
      }
+   }
+   
+   function toggleOn(d) {
+      if (!d.children) {
+          d.children = d._children;
+          d._children = null;
+        }
+        if (!d.vcf) {
+            d.vcf = d._vcf;
+            d._vcf = null;
+          }
+   }
+   
+   function toggleOff(d) {
+      if (d.children) {
+          d._children = d.children;
+          d.children = null;
+        }
+        if (d.vcf) {
+            d._vcf = d.vcf
+            d.vcf = null;
+          }
    }
 }
