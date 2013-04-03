@@ -28,7 +28,7 @@
        "level" : "0", 
        "children": [
         { 
-           "name"  : "CLR",
+           "name"  : "CLM",
            "level" : 1,
            "vcf"   : []
         },
