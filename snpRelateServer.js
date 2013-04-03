@@ -28,8 +28,10 @@ var tool = {
       // console.log(JSON.stringify(samples));
       var results = []; 
       for (var i=0; i < samples.length; i++) {
-         results.push(samples[i].split(","));
+         var s = samples[i].split(",");
+         results.push([ parseFloat(s[0]), parseFloat(s[1]), s[2] ]);
       }
+      var last = results.length-1;
       return JSON.stringify(results);
    },
    path: '/Users/chase/Tools/snpRelate/pcaStream2.R'
