@@ -131,60 +131,22 @@
       ]);      
             
       $(document).ready(function() {
-         $("#bam-url").tokenInput([
-               { name: "ACB" },
-               { name: "ASW" },
-               { name: "CDX" },
-               { name: "CEU" },
-               { name: "CHB" },
-               { name: "CHD" },
-               { name: "CLM" },
-               { name: "FIN" },
-               { name: "GBR" },
-               { name: "GIH" },
-               { name: "IBS" },
-               { name: "JPT" },
-               { name: "KHV" },
-               { name: "LWK" },
-               { name: "MXL" },
-               { name: "PEL" },
-               { name: "PUR" },
-               { name: "TSI" },
-               { name: "YRI" },
-           ],  { 
-              theme: "custom", 
-              prePopulate : [{ name:'CEU'}, { name:'YRI'}, { name:'CHB'}],
-              onAdd: function(elem) { addPop(elem); drawPopulation( window.region_hierachy ); },
-              onDelete: function(elem) { removePop(elem); drawVcf( getPopulationArray() ); }
-          });       
-           
-           // tmp do graph          
-          
-           var range = '1000000nt - 1050000nt';
+         
+           // set range
+           var range = '4000000nt - 4050000nt';
            $("#range-nt").val(range);
            
-//           var dataset = $('#bam-url').tokenInput("get");
-
-            window.popTreeHeight = 600;
+           // get width and height of page
            var m = [20, 120, 20, 120],
-               w = $("#graph-container").css('width').split('px')[0] - m[1] - m[3],
-               h = window.popTreeHeight - m[0] - m[2];
-               
-            
-
+               w = $("#graph-container").css('width').split('px')[0],
+               h = $("#graph-container").css('height').split('px')[0];
+                          
            var svg = d3.select("#graph-container").append("svg:svg")
               .attr("width", '100%')
               .attr("height", "100%")
               .attr("id", "vcf-graph")
 
-           createPopTree("js/region.json", svg,m, w, h, function(d) {
-              // check for top level
-              // if (d.depth == 1) {
-              //    if(d.children)
-              //        d.children.forEach(toggleOn)
-              //    else
-              //        d._children.forEach(toggleOff)                  
-              // }
+           createPopTree("js/region.json", svg,m, w - m[1] - m[3], h  - m[0] - m[2], function(d) {
               
               // recalculate Pca
               if(d._vcf) {
@@ -198,21 +160,41 @@
                }
               getPcaGdsData();
            });
-           
          
+         // draw pca box         
+         window.pcaBoxW = w - 220;
+         var g = svg.append("g")
+            .attr("id", "g-pca")
+            .attr("transform", 'translate(' + parseInt(w/2 - window.pcaBoxW/2 ) + ',' + parseInt(h/2) + ')');         
+         
+         var boxH =  (h / 2) * 0.95;
+         
+         var gr = g.append('rect')
+            .attr('x', 0)
+            .attr('y', 0)
+            .style("stroke", 'black')
+            .style("fill", "none")
+            .attr('width', window.pcaBoxW)
+            .attr('height', boxH);
       });
       
+      // set defaults
       window.padding = 50;
       window.vcfBoxHeight = 50;
       window.x = [2.5,0.5,2.2,1.9,3.1,2.3,2,1,1.5,1.1];
       window.y = [2.4, 0.7,2.9,2.2,3.0,2.7,1.6,1.1,1.6,0.9];
       window.dotFillOp = $('.dot').css('fill-opacity');
-      window.color = d3.scale.category10();
+      window.color10 = d3.scale.category10();
+      window.color20 = d3.scale.category20();
       
 
    </script>
    <script>
-      function getChromosome() {return (11);}
+      function getChromosome() {
+         var el = document.getElementById('chromosome');
+         var chr = el.options[el.selectedIndex].value;
+         return chr;
+      }
       function getMin() {
          var range = $("#range-nt").val();
          // remove nt's and white space
@@ -229,55 +211,29 @@
          var max = range.split('-')[1];
          return parseInt(max);  
       };
+      function determineColor(d) {
+         if (document.getElementById("colorBy").checked) 
+            return window.color20( window.test_populations[d[2]] ); 
+         else
+            return window.color10( window.region[ window.test_populations[d[2]] ]);
+      }
+      function determineColorFunc() {
+         if (document.getElementById("colorBy").checked) 
+            return window.color20; 
+         else
+            return window.color10;
+      }
       function getVcfBoxWidth() { 
          var w = d3.select('#vcf-graph').attr('width');
          var dl = $('#bam-url').tokenInput("get").length;
          return w / dl - window.padding;
       }
-      function toggleOn(d) {
-           if (!d.children) {
-               d.children = d._children;
-               d._children = null;
-             }
-             if (!d.vcf) {
-                 d.vcf = d._vcf;
-                 d._vcf = null;
-               }
-        }
 
-        function toggleOff(d) {
-           if (d.children) {
-               d._children = d.children;
-               d.children = null;
-             }
-             if (d.vcf) {
-                 d._vcf = d.vcf
-                 d.vcf = null;
-               }
-        }
-      function addPop(elem) {
-         elem.active = true;         
-         getPopulationArray().push(elem);
-      }
-      
-      function removePop(elem) {
-         window.populationArray = _.reject(getPopulationArray(), function(p) { return p.name == elem.name; });
-      }
-      
-      function getPopulationArray() {
-         if (window.populationArray) return window.populationArray;
-         
-         var pops = $('#bam-url').tokenInput("get");
-          // add 'active' attribute to each population object
-         window.populationArray = _.map( pops, function(elem) { elem.active = true; return elem; });
-         return window.populationArray;
-      }
-
-      
       function getStaticVcfUrl() {
-         var vcf = "-h 'http://s3.amazonaws.com/1000genomes/release/20101123/interim_phase1_release/ALL.chr2.phase1.projectConsensus.genotypes.vcf.gz'";
+         var chr = getChromosome();
+         var vcf = "-h 'http://s3.amazonaws.com/1000genomes/release/20101123/interim_phase1_release/ALL.chr" + chr + ".phase1.projectConsensus.genotypes.vcf.gz'";
          var url = "http://0.0.0.0:7090?cmd=" + vcf + " "
-                 + "2:" + getMin() + "-" + getMax();
+                 + chr + ":" + getMin() + "-" + getMax();
                  
          return encodeURI(url);
       }
@@ -311,7 +267,7 @@
          var samples = undefined;
          var variants = {};
          var i=0;
-         var w = parseInt(d3.select("#vcf-graph rect").attr("width"));
+         var w = parseInt(d3.select("#vcf-graph .rect-container").attr("width"));
          var x = d3.scale.linear()
              .domain([getMin(), getMax()])
              .range([2, w-2]);            
@@ -350,15 +306,13 @@
       function updateVcf(variants, w, x) {
          _.each(variants, function(varData, pop) {
             var group = d3.select("#" + pop + "-vcf-graph .bars");
-                  // .data([1])
-                  // .enter().append("g")
-                  //    .attr("class", "bars");
 
             // Generate a histogram using twenty uniformly-spaced bins.
+
             var data = d3.layout.histogram()
                 .bins(x.ticks(20))
                 (varData);
-             
+
             var y = d3.scale.linear()
                .domain([0, d3.max(data, function(d) { return d.y; })])
                .range([0, 48]);    
@@ -374,7 +328,7 @@
               .attr("x", 1)
               .attr("width", w / data.length - 3)
               .attr("height", 0 )
-              .style("fill", window.color(pop))
+              .style("fill", window.color20(pop))
               .style("stroke", "none");
            
            
@@ -384,21 +338,7 @@
              barUpdate.select("rect")
                 .attr("height", function(d) { return y(d.y); });
 
-                     
-            // bar.append("text")
-            //   .attr("dy", ".75em")
-            //   .attr("y", 6)
-            //   .attr("x", x(data[0].dx) / 2)
-            //   .attr("text-anchor", "middle")
-            //   .text(function(d) { return formatCount(d.y); });
          });
-      }
-      
-      function getSampleIdList() {
-         // var samples = _.map(getBams(), function(b) { return b.match(/data\/(\S+)\/alignment/)[1]; });
-         var activePops = d3.selectAll("g .pop").filter(function(d) { return !d._vcf; }).data();
-         var pops
-         return samples
       }
       
       function getPcaGdsName() {
@@ -464,59 +404,160 @@
       }
       
       function updatePcaChart(data, duration) {
+         var data = data || d3.select("#g-pca").selectAll(".dot").data();
+         var duration = duration || 500;
+         
          var margin = {top: 20, right: 20, bottom: 30, left: 40},
              width = 960 - margin.left - margin.right,
              height = 500 - margin.top - margin.bottom;
 
-         var x = d3.scale.linear()
-             .range([-window.pcaBoxW/2 + 5,  window.pcaBoxW/2 - 5]);
+         window.x = d3.scale.linear()
+             .range([5,  window.pcaBoxW - 70]);
 
-         var y = d3.scale.linear()
+         window.y = d3.scale.linear()
              .range([$("#vcf-graph").height()/2 * 0.8 - 5, 5]);
              
+         var x = window.x,
+             y = window.y;
+         
+         var div = d3.select("body").append("div")   
+            .attr("class", "tooltip")               
+            .style("opacity", 0);    
          
          x.domain( [d3.min(data, function(d) {return d[0]}), d3.max(data, function(d) {return d[0]})] );
-         y.domain( [d3.min(data, function(d) {return d[1]}), d3.max(data, function(d) {return d[1]})] );
+         y.domain( [d3.min(data, function(d) {return d[1]}), d3.max(data, function(d) {return d[1]})] );         
          
-         // filter data for null values and newlines
-         for( var i=0; i < data.length; i++) {
-            // check id for trainling newline
-            if(data[i][2][ data[i][2].length-1 ] == "\n")
-               data[i][2] = data[i][2].trim();
-            else if (data[i][2] == "") {
-               data.splice(i,1)
-               i -= 1;
-            }            
-         }
-             
+         // add first pca data if available
+         if (window.timesRun > 1) {
+            var dataObj = {};
+            window.previousData.data.forEach( function(d) {
+               dataObj[d[2]] = [ d[0], d[1] ];
+            });
+            for( var i=0; i < data.length; i++) {
+               if(dataObj[ data[i][2] ]) {
+                  var x0 = dataObj[ data[i][2] ][0];
+                  var y0 = dataObj[ data[i][2] ][1];
+                  data[i].push( {'x0':x0, 'y0':y0} );
+               }
+            }
+         } 
          var dots = d3.select("#g-pca").selectAll(".dot");
+         
          var dotData = dots.data(data, function(d) { return d[2]; });
          
-         dotData.enter().append("circle")
+         var dotDataEnter = dotData.enter();
+         dotDataEnter.append("circle")
             .attr("class", 'dot')
             .attr("cx", function(d) { return x(d[0]); })
             .attr("cy", function(d) { return y(d[1]); })
-            .attr("r", 3.5)
+            .attr("r", 0)
             .style("fill-opacity", 1)
-            .style("fill", function(d) { return window.color( window.region[ window.test_populations[d[2]] ]); })
-
+            .style("fill", function(d) { return determineColor(d);  })
+            //.style("fill", function(d) { return window.color( window.region[ window.test_populations[d[2]] ]); })
+            .on("mouseover", function(d) {      
+                        div.transition()        
+                            .duration(100)      
+                            .style("opacity", .9);      
+                        div .html("Sample: " + d[2] + "<br/>Pop: " + window.test_populations[d[2]] + "<br/>Region: " + window.region[ window.test_populations[d[2]] ])                                 
+                            .style("left", (d3.event.pageX) + "px") 
+                            .style("text-align", 'left')    
+                            .style("top", (d3.event.pageY - 24) + "px");    
+                        })                  
+                    .on("mouseout", function(d) {       
+                        div.transition()        
+                            .duration(500)      
+                            .style("opacity", 0);   
+            })
+            .transition()
+               .duration(500)
+               .attr("r", 3.5);
+         
+         if(window.timesRun > 1){
+            var px = window.previousData.x;
+            var py = window.previousData.y;
+            var connectors = d3.select("#g-pca").selectAll(".connector");
+            var connectorData = connectors.data(data, function(d) { return d[2]; });
+            var cdEnter = connectorData.enter().append('g')
+               .attr("class","connector");            
+            
+          cdEnter.append('line')
+             .attr("x1", function(d) { return px( d[3].x0 )})
+             .attr("y1", function(d) { return py( d[3].y0 )})
+             .attr("x2", function(d) { return px( d[3].x0 )})
+             .attr("y2", function(d) { return py( d[3].y0 )})
+             .style("stroke", function(d) { return determineColor(d); })
+             .style("stroke-opacity", 0.3)
+             .style("stroke-width", 1)
+             .style('stroke-dasharray', '3, 5');
+            
+            cdEnter.append("circle")
+               .attr("r", 3.5)
+               .attr("stroke", function(d) { return determineColor(d); })
+               .attr("fill", "none")
+               .style("stroke-opacity", 0.3)
+               .attr("cx", function(d) { return px(d[3].x0) })
+               .attr("cy", function(d) { return py(d[3].y0) });
+            
+             var cdUpdate = connectorData.transition().duration(duration).ease('linear');
+             
+             cdUpdate.select("line")
+                .attr("x2", function(d) { return x(d[0] )})
+                .attr("y2", function(d) { return y(d[1] )})
+               
+               
+            connectorData.exit().remove();
+         }
          
          dots.transition()
             .ease("linear")
             .duration(duration)
+            .attr("r", 3.5)
             .attr("cx", function(d,i) { return x(d[0]); })
             .attr("cy", function(d) { return y(d[1]); })
-            .attr("r", 3.5);
-         
-         
-         // dots.transition()
-         //    .ease("bounce")
-         //    .attr("r", 3.5);
-         //.style("fill", function(d) { return window.color(d[2]); })
-        // .each("end", function() { $('.dot').css('fill-opacity', window.dotFillOp); });
+            .style("fill", function(d) { return determineColor(d); })
+            
+
         
         dotData.exit().transition()
-            .attr("r", 0);
+            .attr("r", 0)
+            .remove();
+            
+        // update legend
+         var legendData = d3.select('#g-pca').selectAll(".legend")
+              .data(determineColorFunc().domain());
+              
+         // add new legends
+         var legendEnter = legendData.enter()
+         
+         var gLegend = legendData.enter().append("g")
+              .attr("class", "legend")
+              .attr("transform", function(d, i) { 
+                 return "translate(0," + i * 20 + ")"; 
+              });
+
+         gLegend.append("rect")
+              .attr("x", window.pcaBoxW - 24)
+              .attr("width", 18)
+              .attr("height", 18)
+              .attr('y', 5)
+              .style("fill", determineColorFunc());
+
+          gLegend.append("text")
+              .attr("x", window.pcaBoxW - 30)
+              .attr("y", 14)
+              .attr("dy", ".35em")
+              .style("text-anchor", "end")
+              .text(function(d) { return d; });
+          
+          // update legends
+          legendData.select("rect").transition()
+            .style("fill", determineColorFunc())
+          
+          legendData.select("text")
+            .text(function(d) { return d;} )
+          
+          //remove 
+          legendData.exit().remove();
       }
       
       function initPcaChart(data) {
@@ -525,7 +566,7 @@
              height = 500 - margin.top - margin.bottom;
 
          var x = d3.scale.linear()
-             .range([-window.pcaBoxW/2,  window.pcaBoxW/2]);
+             .range([0,  window.pcaBoxW]);
 
          var y = d3.scale.linear()
              .range([$("#vcf-graph").height()/2 * 0.8 - 5, 0]);
@@ -553,7 +594,7 @@
                .attr("r", 3.5)
                .attr("cx", function(d) { return x(d[0]); })
                .attr("cy", function(d) { return y(d[1]); })
-               .style("fill", function(d) { return window.color( window.region[d[3]]); }) 
+               .style("fill", function(d) { return determineColor(d); }) 
                .on("mouseover", function(d) {      
                            div.transition()        
                                .duration(100)      
@@ -570,87 +611,26 @@
                        });                          
 
            var legend = svg.selectAll(".legend")
-               .data(window.color.domain())
+               .data(determineColorFunc().domain())
              .enter().append("g")
                .attr("class", "legend")
                .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
 
            legend.append("rect")
-               .attr("x", window.pcaBoxW/2 - 24)
+               .attr("x", window.pcaBoxW - 24)
                .attr("width", 18)
                .attr("height", 18)
                .attr('y', 5)
-               .style("fill", window.color);
+               .style("fill", determineColorFunc());
 
            legend.append("text")
-               .attr("x", window.pcaBoxW/2 - 30)
+               .attr("x", window.pcaBoxW - 30)
                .attr("y", 14)
                .attr("dy", ".35em")
                .style("text-anchor", "end")
                .text(function(d) { return d; });
          
       }
-       // function toggleVcf(elem) {
-       //     var pop = elem.getAttribute('data-name');
-       //     var groups = getPopulationArray();
-       //     //window.color = d3.scale.category10();
-       //     // var group = undefined;
-       //     // for ( var i=0; i < groups.length; i++) {
-       //     //    if ( groups[i].name == pop ) {
-       //     //       group = group[i];
-       //     //       break;
-       //     //    }
-       //     //    // burn off groups so color scale
-       //     //    color(groups[i].name);
-       //     // }
-       //     var group = _.find(groups, function(group) { return group.name == pop; });
-       //     
-       //     group.active = elem.checked;
-       //     
-       //    
-       //     
-       //     // d3.selectAll(".vcf-viz").selectAll("circle")
-       //     //   .transition()
-       //     //      .duration(750)
-       //     //      .style("fill", function(d) {
-       //     //         var c = color(this.parentElement.__data__.name);
-       //     //         if (pop == this.parentElement.__data__.name) {
-       //     //            if (this.parentElement.__data__.active) 
-       //     //               return c;
-       //     //            else 
-       //     //               return 'rgb(200,200,200)';
-       //     //         }
-       //     //      })
-       //     var groupD3 = d3.select("#" + pop + "-vcf-graph");
-       //     groupD3.selectAll("circle")
-       //       .transition()
-       //          .duration(750)
-       //          .style("fill", function(d) { 
-       //             if(group.active) 
-       //                return window.color(pop); 
-       //             else 
-       //             return 'rgb(200,200,200)'; 
-       //          });
-       //     
-       //     //update pca
-       //     getPcaGdsData();
-       //  }
-       
-       function forceRedraw(element){
-
-           if (!element) { return; }
-
-           var n = document.createTextNode(' ');
-           var disp = element.style.display;  // don't worry about previous display style
-
-           element.appendChild(n);
-           element.style.display = 'none';
-
-           setTimeout(function(){
-               element.style.display = disp;
-               n.parentNode.removeChild(n);
-           },20); // you can play with this timeout to make it as short as possible
-       }
        
        function drawPopulation(dataset) {
           var padding = window.padding;         
@@ -705,24 +685,6 @@
                 .style('text-anchor', 'middle')
                 .text( function(d) { return d.name; })
 
-
-             // gRegion.append("foreignObject")
-             //       .attr("width", 50)
-             //       .attr("height", 50)
-             //       .attr("x", 0)
-             //       .attr("y", -19)
-             //       .attr("id", function(d) { return d.name + '-check';})
-             //     .append("xhtml:input")
-             //      .attr("type", 'checkbox')
-             //      .attr("checked", true)
-             //      .style("position", "static")
-             //      .attr("onClick", 'toggleVcf(this)')
-             //      .attr("data-name", function(d) { return d.name;})
-             //      .on("click", function(d, i){ 
-             //         // have to force redraw b\c of some bug with foreign objects and transforms       
-             //         forceRedraw(this);
-             //       });
-
              var circle = gRegion.append("circle")
                 .attr('cx', 0)
                 .attr('cy', 0)
@@ -739,18 +701,6 @@
              gRegion.transition()
                 .duration(750)
                 .attr("transform", function(d,i) { return "translate(" + parseInt(i * (w / dataset.length) + padding/2) + "," + 20 + ")"; })
-
-
-             // g.append('path')                  
-             //                .style('stroke',  "rgb(100,100,100)")
-             //                .style('stroke-width', '2px')
-             //                .style('fill', 'none')
-             //                .attr('d', function(d,i) { return diagonal({source:{x:w/2,y:0}, target:{x:w/2,y:0}}) } )
-             //             .transition()
-             //                .duration(750)
-             //                .attr('d', function(d,i) { return diagonal({source:{x:w/2,y:0}, target:{x:i*boxW+padding/2+(boxW-padding)/2, y:h/2}}) } )
-
-             // remove exiting data
 
              var gExit = box.exit();
 
@@ -829,24 +779,6 @@
             .attr('x', 18)
             .attr('y', -2)
             .text( function(d) { return d.name; })
-            
-         
-         // gRect.append("foreignObject")
-         //         .attr("width", 50)
-         //         .attr("height", 50)
-         //         .attr("x", 0)
-         //         .attr("y", -19)
-         //         .attr("id", function(d) { return d.name + '-check';})
-         //       .append("xhtml:input")
-         //        .attr("type", 'checkbox')
-         //        .attr("checked", true)
-         //        .style("position", "static")
-         //        .attr("onClick", 'toggleVcf(this)')
-         //        .attr("data-name", function(d) { return d.name;})
-         //        .on("click", function(d, i){ 
-         //           // have to force redraw b\c of some bug with foreign objects and transforms       
-         //           forceRedraw(this);
-         //         });
          
          gRect.append("rect")
             .attr('x', 0)
@@ -901,139 +833,23 @@
       }
       
       function startPca() {
-         step2();
+         window.timesRun = window.timesRun + 1 || 1;
+         
+         // save previous data
+         if( d3.select("#g-pca").selectAll(".dot").length > 0 ) {
+            window.previousData = {
+               data: d3.select("#g-pca").selectAll(".dot").data(),
+               x : window.x,
+               y : window.y
+            }
+         }
          
          // get VCF data
-         getStaticVcfData();
+        getStaticVcfData();
          
          // fire PCA
          getPcaData();
 
-      }
-      
-      function step2() {         
-         // step 1 hide controls
-         // $(".step1-sub-steps").slideUp("slow");         
-         // 
-         // $(".step1").css("color", "rgb(180,180,180)")
-         // $(".step2").css("color", "black")
-         // $(".step2-sub-steps").slideDown("slow"); 
-         $("#pca-settings").css('visibility', 'visible');
-         $("#pca-button").css('visibility', 'hidden');
-          
-         var origH = 600
-        // $("#vcf-graph").css("height", $("#app").css("height"));
-         
-         var svgW = $("#vcf-graph").width();
-         var svgH = $("#vcf-graph").height();
-         window.pcaBoxW = svgW - 220;
-         var boxH =  (svgH / 2) * 0.95;
-         var padding = 5;
-         
-         var svg = d3.select("#vcf-graph");
-         
-         if( $("#g-pca").length == 0) {
-         
-            var g = svg.append("g")
-               .attr("id", "g-pca")
-               .attr("transform", 'translate(' + parseInt(svgW/2) + ',' + parseInt(0) + ')');
-            
-            // g.append("foreignObject")
-            //     .attr("width", window.pcaBoxW)
-            //     .attr("height", 100)
-            //     .attr("x", -window.pcaBoxW/2)
-            //     .attr("y", -20)
-            //     .style("z-index", 10)
-            //   .append("xhtml:body")
-            //     .html('<div style="z-index:15; width: 500px; margin-left: auto; margin-right: auto; font-size:12px"><div style="float:left; width:76px;text-align:right">Some thing</div><input onClick="alert(10)" type="range" min="-10" max="10" step="0.20"  style="float:left"/><div style="float:right; width:76px;text-align:left">LD threshold</div><input type="range" min="0" max="100" style="float:right"/><div style="clear:both"></div></div>');
-            
-            var gr = g.append('rect')
-               .attr('x', 0)
-               .attr('y', 0)
-               .style("stroke", 'black')
-               .style("fill", "none")
-               .attr('width', 0)
-               .attr('height', 0);
-            } else {
-               var g = d3.select("#g-pca");
-               var gr = g.select("rect");
-            }
-         
-         
-//         document.getElementById('fo-pca-sliders').style.display = 'block';   
-         g.transition()
-            .duration(750)
-            .attr('transform', 'translate(' + parseInt(svgW/2) + ',' + parseInt(svgH/2) + ')');
-            
-         gr.transition()
-            .duration(750)
-            .attr('x', -window.pcaBoxW/2)
-            .attr('width', window.pcaBoxW)
-            .attr('height', boxH);
-            
-         g.selectAll('.dot')
-            .transition()
-               .duration(750)
-               .attr('r', 3.5)
-         
-         var diagonal = d3.svg.diagonal();                                
-      
-         // var vBoxW = 50;
-         // var vpadding = window.padding;
-         // 
-         // svg.selectAll(".lower-path")
-         //    .transition()
-         //       .duration(750)
-         //       .attr('d', function(d,i) { return diagonal({source:{x:i*vBoxW + vBoxW/2 + vpadding/2 + i*(vpadding), y:origH/2 + window.vcfBoxHeight}, target:{x:svgW/2,y:svgH-boxH-padding}}) });
-         // 
-         // svg.selectAll(".lower-path")
-         //       .data( getPopulationArray() )
-         //    .enter().append("path")
-         //       .attr("class", "lower-path")
-         //       .style('stroke',  "rgb(100,100,100)")
-         //       .style('stroke-width', '2px')
-         //       .style("fill", "none")
-         //       .attr('d', function(d,i) { return diagonal({source:{x:i*vBoxW + vBoxW/2 + vpadding/2 + i*(vpadding), y:origH/2 + window.vcfBoxHeight}, target:{x:i*vBoxW + vBoxW/2 + vpadding/2 + i*(vpadding), y:origH/2 + window.vcfBoxHeight}}) })
-         //       .transition()
-         //          .duration(750)
-         //          .attr('d', function(d,i) { return diagonal({source:{x:i*vBoxW + vBoxW/2 + vpadding/2 + i*(vpadding), y:origH/2 + window.vcfBoxHeight}, target:{x:svgW/2,y:svgH-boxH-padding}}) });
-            
-         
-      }
-      
-      function step1() {
-         $(".step2-sub-steps").slideUp("slow");         
-         
-         $(".step2").css("color", "rgb(180,180,180)")
-         $(".step1").css("color", "black")         
-         $(".step1-sub-steps").slideDown("slow");  
-         
-         d3.select("#g-pca").select("rect")
-            .transition()
-               .duration(750)
-               .attr('x', 0)
-               .attr('width', 0)
-               .attr('height', 0);
-         
-         d3.select("#g-pca")
-            .transition()
-               .duration(750)
-               .attr("transform", 'translate(' + parseInt($("#vcf-graph").width()/2) + ',' + parseInt(window.h/2 + window.vcfBoxHeight) + ')')
-               
-         d3.select("#g-pca").selectAll(".dot")
-            .transition()
-               .duration(750)
-               .attr('r', 0)
-               
-         d3.selectAll(".lower-path").remove();
-
-         var diagonal = d3.svg.diagonal();
-         var vBoxW = getVcfBoxWidth();
-         var vpadding = window.padding;
-         d3.selectAll('.lower-path')
-            .transition()
-               .duration(750)
-               .attr('d', function(d,i) { return diagonal({source:{x:i*vBoxW + vBoxW/2 + vpadding/2 + i*(vpadding), y:window.h/2 + window.vcfBoxHeight}, target:{x:i*vBoxW + vBoxW/2 + vpadding/2 + i*(vpadding), y:window.h/2 + window.vcfBoxHeight}}) })
       }
       
    </script>
@@ -1048,10 +864,10 @@
 
       </div>
       <div id="step1-controls" class="step1-sub-steps" style="margin-top: 20px">
-         <div style="position:relative; width: 400px; margin-left: auto; margin-right: auto">            
+         <div style="position:relative; width: 500px; margin-left: auto; margin-right: auto">            
             <select id="chromosome" style="width:65px; position:absolute; top: 5px; left: 0px">
               <option value="1">Chr1</option>
-              <option value="2">Chr2</option>
+              <option selected='selected' value="2">Chr2</option>
               <option value="3">Chr3</option>
               <option value="4">Chr4</option>
               <option value="5">Chr5</option>
@@ -1072,11 +888,12 @@
               <option value="20">Chr20</option>
               <option value="21">Chr21</option>
               <option value="22">Chr22</option>
-              <option value="x">ChrX</option>
-              <option value="y">ChrY</option>
+              <option value="X">ChrX</option>
+              <option value="Y">ChrY</option>
             </select>
             <div style="width:150px; position:absolute; top: 6px; left: 80px">1000G VCF</div>
-            <input id="range-nt" class="nt-range" type="text"  style="width:150px; position:absolute; top: 5px; left: 180px"/>
+            <input id="range-nt" class="nt-range" type="text"  style="width:150px; position:absolute; top: 5px; right: 160px"/>
+            <div onClick="startPca()" style="cursor:pointer;width:150px; position:absolute; top: 5px; right:0px; color:white; background: #C02028; border-radius: 10px; text-align: center">Run / Compare</div>
          </div>
          <!-- <div id="sliders-freebayes" style="position:relative; width: 400px; margin-left: auto; margin-right: auto;">
             <input type="range" min="-10" max="10" step="0.20"  style="position:absolute; top: 5px; left: 0px"/>
@@ -1086,12 +903,13 @@
          </div> -->
       </div>      
       <div id="graph-container"></div>
-      <div id="pca-button" onClick="startPca()" style=" height:60px; border-radius:44px; border: 1px solid rgb(180,180,180);text-align:center; line-height: 55px; background-color: #990E00; color: white; font-size: 40px; cursor:pointer; position:absolute; top:60%; left:50%; margin-left:-200px; width: 400px">Start PCA</div>
-      <div id="pca-settings" style="position:absolute; margin-left:-250px; left:50%; top:49% ;width:500px; visibility:hidden">
+      <!-- <div id="pca-button" onClick="startPca()" style=" height:60px; border-radius:44px; border: 1px solid rgb(180,180,180);text-align:center; line-height: 55px; background-color: #990E00; color: white; font-size: 40px; cursor:pointer; position:absolute; top:60%; left:50%; margin-left:-200px; width: 400px">Start PCA</div> -->
+      <div id="pca-settings" style="position:absolute; margin-left:-250px; left:50%; top:49% ;width:550px;" >
          <span style="position:absolute; top: 3px; left: 0px">MAF</span>
          <input id="maf-slider" onmouseup="getPcaGdsData()" value="0.03" type="range" min="0" max="0.1" step="0.01" style="position:absolute; top: 5px; left: 34px"/>
-         <input id="ld-slider" onmouseup="getPcaGdsData()" value="4" type='range' min="0" max="10" step="0.1" style="position:absolute; top: 5px; right: 28px; height: 10px"/>
-         <span style="position:absolute; top: 2px; right: 0px">LD</span>
+         <input id="ld-slider" onmouseup="getPcaGdsData()" value="4" type='range' min="0" max="10" step="0.1" style="position:absolute; top: 6px; left: 200px; height: 10px"/>
+         <span style="position:absolute; top: 2px; left: 334px">LD</span>
+         <span style="position:absolute; top: 1px; right: 0px"><input id='colorBy' onchange="updatePcaChart()" type="checkbox" name="vehicle" value="Bike">Color By Population</span>
       </div>
             
 
