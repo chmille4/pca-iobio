@@ -10,7 +10,7 @@ var express = require('express'),
 var io = require('socket.io').listen(server);
 
 // start server
-server.listen(8070);
+server.listen(7070);
 
 // setup server
 app.use('/', express.static(__dirname + '/public'));
