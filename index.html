@@ -3,17 +3,13 @@
 <head>
    <script src="js/alignments.js"></script>
    <script src="js/population.js"></script>
-   <script src="js/region.js"></script>
    <script src="js/underscore-min.js"> </script>
    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>
-   <script type="text/javascript" src="js/loopj-jquery-tokeninput/src/jquery.tokeninput.js"></script>
    <script src="./js/d3.v3.min.js"></script>
    <script src="/socket.io/lib/socket.io.js"></script>
    <script src="./js/modernizr-custom.js"></script>
    <link rel="stylesheet" href="css/popTree.css" type="text/css" />
-    <script type="text/javascript" src="js/popTree.js"></script>
-   <link rel="stylesheet" href="js/loopj-jquery-tokeninput/styles/token-input.css" type="text/css" />
-   <link rel="stylesheet" href="js/loopj-jquery-tokeninput/styles/token-input-custom.css" type="text/css" />
+   <script type="text/javascript" src="js/popTree.js"></script>
    <link href='http://fonts.googleapis.com/css?family=Quicksand:300,400' rel='stylesheet' type='text/css'>
    <style>
       body {
@@ -35,8 +31,6 @@
       div.tooltip {   
         position: absolute;           
         text-align: center;           
-/*        width: 100px;                  
-        height: 15px;                 */
         color:white;
         padding: 4px 6px 4px 6px;             
         font: 11px arial;        
@@ -48,7 +42,6 @@
 
       #title #subtitle {
          font-size:15.4px;
-/*         font-family: arial;*/
          font-weight: 400;
          margin-top:-5px;
          color:#2d8fc1;
@@ -79,11 +72,6 @@
         stroke: #000;
         shape-rendering: crispEdges;
       }
-      
-/*      .bar rect {
-        shape-rendering: crispEdges;
-      }*/
-      
 
       .dot {
         fill-opacity: 0.4;
@@ -95,11 +83,6 @@
          left: 0px;
          right: 0px;
          bottom: 0px;
-/*         margin-top: 50px;
-         margin-left:auto;
-         margin-right:auto;
-         width: 100%;
-         height: 80%;*/
       }
       
       #vcf-graph {
@@ -146,7 +129,7 @@
               .attr("height", "100%")
               .attr("id", "vcf-graph")
 
-           createPopTree("js/region.json", svg,m, w - m[1] - m[3], h  - m[0] - m[2], function(d) {
+           createPopTree("js/vcfTree.json", svg,m, w - m[1] - m[3], h  - m[0] - m[2], function(d) {
               
               // recalculate Pca
               if(d._vcf) {
@@ -181,8 +164,6 @@
       // set defaults
       window.padding = 50;
       window.vcfBoxHeight = 50;
-      window.x = [2.5,0.5,2.2,1.9,3.1,2.3,2,1,1.5,1.1];
-      window.y = [2.4, 0.7,2.9,2.2,3.0,2.7,1.6,1.1,1.6,0.9];
       window.dotFillOp = $('.dot').css('fill-opacity');
       window.color10 = d3.scale.category10();
       window.color20 = d3.scale.category20();
@@ -213,9 +194,9 @@
       };
       function determineColor(d) {
          if (document.getElementById("colorBy").checked) 
-            return window.color20( window.test_populations[d[2]] ); 
+            return window.color20( window.id2pop[d[2]] ); 
          else
-            return window.color10( window.region[ window.test_populations[d[2]] ]);
+            return window.color10( window.pop2region[ window.id2pop[d[2]] ]);
       }
       function determineColorFunc() {
          if (document.getElementById("colorBy").checked) 
@@ -286,7 +267,7 @@
                for( var j=0; j < results.data.genotypes.length; j++) {
                   var geno = results.data.genotypes[j];
                   if( geno[0] != 0 || geno[2] != 0) {
-                     var pop = window.test_populations[ samples[j] ];
+                     var pop = window.id2pop[ samples[j] ];
                      // var group = d3.select("#" + pop + "-vcf-graph");
                      if ( variants[pop] == undefined ) variants[pop] = [];
                      variants[pop].push( parseInt(results.data.pos) );
@@ -386,8 +367,8 @@
       
       function getPcaData() {
          var url = getPcaUrl();
-         window.population = window.test_populations_array;
-         var initData = _.map(window.test_populations, function(v,k) { 
+         window.population = window.id2pop_array;
+         var initData = _.map(window.id2pop, function(v,k) { 
             return [0,0,k,v]; 
          });
          initPcaChart(initData);
@@ -453,12 +434,12 @@
             .attr("r", 0)
             .style("fill-opacity", 1)
             .style("fill", function(d) { return determineColor(d);  })
-            //.style("fill", function(d) { return window.color( window.region[ window.test_populations[d[2]] ]); })
+            //.style("fill", function(d) { return window.color( window.pop2region[ window.id2pop[d[2]] ]); })
             .on("mouseover", function(d) {      
                         div.transition()        
                             .duration(100)      
                             .style("opacity", .9);      
-                        div .html("Sample: " + d[2] + "<br/>Pop: " + window.test_populations[d[2]] + "<br/>Region: " + window.region[ window.test_populations[d[2]] ])                                 
+                        div .html("Sample: " + d[2] + "<br/>Pop: " + window.id2pop[d[2]] + "<br/>Region: " + window.pop2region[ window.id2pop[d[2]] ])                                 
                             .style("left", (d3.event.pageX) + "px") 
                             .style("text-align", 'left')    
                             .style("top", (d3.event.pageY - 24) + "px");    
@@ -599,7 +580,7 @@
                            div.transition()        
                                .duration(100)      
                                .style("opacity", .9);      
-                           div .html("Sample: " + d[2] + "<br/>Pop: " + window.test_populations[d[2]] + "<br/>Region: " + window.region[ window.test_populations[d[2]] ])                                 
+                           div .html("Sample: " + d[2] + "<br/>Pop: " + window.id2pop[d[2]] + "<br/>Region: " + window.pop2region[ window.id2pop[d[2]] ])                                 
                                .style("left", (d3.event.pageX) + "px") 
                                .style("text-align", 'left')    
                                .style("top", (d3.event.pageY - 24) + "px");    
@@ -637,7 +618,6 @@
           var svg = d3.select('#vcf-graph');
           var w = svg.attr('width');
           var h = svg.attr('height');
-          window.h = h;
           var boxW = w/dataset.length;       
            var box = svg.selectAll(".vcf-viz")
                    .data(dataset, function(d) { return d.name; });
@@ -670,7 +650,6 @@
                    .attr('cx', function(d) { return x(d); });
 
              // enter new data
-
              var g = box.enter().append("g")
                 .attr("class", "vcf-viz")
 
@@ -702,6 +681,7 @@
                 .duration(750)
                 .attr("transform", function(d,i) { return "translate(" + parseInt(i * (w / dataset.length) + padding/2) + "," + 20 + ")"; })
 
+            // remove data
              var gExit = box.exit();
 
              gExit.selectAll("path")
@@ -732,7 +712,6 @@
          var svg = d3.select('#vcf-graph');
          var w = svg.attr('width');
          var h = svg.attr('height');
-         window.h = h;
          var boxW = w/dataset.length;       
 
          var box = svg.selectAll(".vcf-viz")
@@ -765,8 +744,7 @@
                .duration(750)
                .attr('cx', function(d) { return x(d); });
                
-         // enter new data
-         
+         // enter new data         
          var g = box.enter().append("g")
             .attr("class", "vcf-viz")
             
@@ -806,8 +784,7 @@
                .duration(750)
                .attr('d', function(d,i) { return diagonal({source:{x:w/2,y:0}, target:{x:i*boxW+padding/2+(boxW-padding)/2, y:h/2}}) } )
          
-         // remove exiting data
-         
+         // remove exiting data       
          var gExit = box.exit();
          
          gExit.selectAll("path")
@@ -856,14 +833,17 @@
 </head>
 
 <body>
-   
+   <!-- fixed single page app -->
    <div id="app" style="position:absolute; left:0px; top:0px; bottom:0px; right:0px">
+      <!-- title -->
       <div id="title" >
          PCA<span style="color:#f36a22">gr</span>
          <div id="subtitle">1000G realtime principal <span style="letter-spacing:2px">component analysis</span></div>
 
       </div>
-      <div id="step1-controls" class="step1-sub-steps" style="margin-top: 20px">
+      
+      <!-- global controls -->
+      <div style="margin-top: 20px">
          <div style="position:relative; width: 500px; margin-left: auto; margin-right: auto">            
             <select id="chromosome" style="width:65px; position:absolute; top: 5px; left: 0px">
               <option value="1">Chr1</option>
@@ -895,15 +875,12 @@
             <input id="range-nt" class="nt-range" type="text"  style="width:150px; position:absolute; top: 5px; right: 160px"/>
             <div onClick="startPca()" style="cursor:pointer;width:150px; position:absolute; top: 5px; right:0px; color:white; background: #C02028; border-radius: 10px; text-align: center">Run / Compare</div>
          </div>
-         <!-- <div id="sliders-freebayes" style="position:relative; width: 400px; margin-left: auto; margin-right: auto;">
-            <input type="range" min="-10" max="10" step="0.20"  style="position:absolute; top: 5px; left: 0px"/>
-            <input type='range' min="0" max="100" style="position:absolute; top: 5px; right: 0px; height: 10px"/>
-            <input type="range" min="-10" max="10" step="0.20"  style="position:absolute; top: 25px; left: 0px"/>
-            <input type='range' min="0" max="100" style="position:absolute; top: 25px; right: 0px"/>
-         </div> -->
       </div>      
+      
+      <!-- svg container for tree and pca chart -->
       <div id="graph-container"></div>
-      <!-- <div id="pca-button" onClick="startPca()" style=" height:60px; border-radius:44px; border: 1px solid rgb(180,180,180);text-align:center; line-height: 55px; background-color: #990E00; color: white; font-size: 40px; cursor:pointer; position:absolute; top:60%; left:50%; margin-left:-200px; width: 400px">Start PCA</div> -->
+
+      <!-- pca controls -->
       <div id="pca-settings" style="position:absolute; margin-left:-250px; left:50%; top:49% ;width:550px;" >
          <span style="position:absolute; top: 3px; left: 0px">MAF</span>
          <input id="maf-slider" onmouseup="getPcaGdsData()" value="0.03" type="range" min="0" max="0.1" step="0.01" style="position:absolute; top: 5px; left: 34px"/>
@@ -911,35 +888,8 @@
          <span style="position:absolute; top: 2px; left: 334px">LD</span>
          <span style="position:absolute; top: 1px; right: 0px"><input id='colorBy' onchange="updatePcaChart()" type="checkbox" name="vehicle" value="Bike">Color By Population</span>
       </div>
-            
-
+      
    </div>
-   <!-- <div id="steps" style="position:absolute; right:0px; top:0px; bottom:0px; left:78%">
-           <div class="step step1" style="margin-top: 20px">
-              <h1 onClick="step1()">1. Choose</h1>
-              <div class="step1-sub-steps">
-                  <div style=" margin-top:25px; margin-left: -220px; margin-bottom: -36px"><-------------------------------</div>
-                  <div class="sub-step">Choose 1000G Populations<img src="images/info.png"/ style="height:20px; vertical-align:text-bottom"/></div>
-                  <div style=" margin-top:35px; margin-left: -220px; margin-bottom: -36px"><-------------------------------</div>
-                 <div class="sub-step">Set Variant Calling Params<img src="images/info.png"/ style="height:20px; vertical-align:text-bottom"/></div>
-                       <div id="pca-button" onClick="startPca()" style="margin-left: 20px; margin-right: 20px; margin-top: 30px; height:30px; border-radius:44px; border: 1px solid rgb(180,180,180);text-align:center; line-height: 30px; background-color: #990E00; color: white; font-size: 20px; cursor:pointer">Start PCA</div>
-              </div>
-           </div>
-           <div class="step step2" style="margin-top: 248px; color: rgb(180,180,180)">
-              <h1 onClick="step2();">2. Play</h2>
-                 <div class="step2-sub-steps" style="display: none">
-                    <div style=" margin-top:25px; margin-left: -220px; margin-bottom: -36px"><-------------------------------</div>  
-                    <div class="sub-step">Play with PCA Params<img src="images/info.png"/ style="height:20px; vertical-align:text-bottom"/></div>
-                    <div  style="position:relative; width: 450px; margin-top: -37px; margin-left: -245%">
-                       
-                       <input id="maf-slider" onmouseup="getPcaGdsData()" value="0.03" type="range" min="0" max="0.1" step="0.01" style="position:absolute; top: 5px; left: 34px"/>
-                       <input id="ld-slider" onmouseup="getPcaGdsData()" value="4" type='range' min="0" max="10" step="0.1" style="position:absolute; top: 5px; right: 28px; height: 10px"/>
-                       <span style="position:absolute; top: 2px; right: 0px">LD</span>
-                    </div>
-                 </div>
-           </div>
-        </div> -->
-   
    
 </body>
 </html>

@@ -1,4 +1,21 @@
-window.test_populations = { 
+window.pop2region = {
+   ASW : 'AFR',
+   LWK : 'AFR',
+   YRI : 'AFR',
+   CLM : 'AMR',
+   MXL : 'AMR',
+   PUR : 'AMR',
+   CHB : 'ASN',
+   CHS : 'ASN',   
+   JPT : 'ASN',
+   CEU : 'EUR',
+   FIN : 'EUR',   
+   GBR : 'EUR',
+   IBS : 'EUR',
+   TSI : 'EUR'
+}
+
+window.id2pop = { 
    HG00096 : 'GBR',
    HG00097 : 'GBR',
    HG00099 : 'GBR',
