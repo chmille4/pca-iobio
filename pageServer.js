@@ -21,3 +21,7 @@ app.get('/', function (req, res) {
 app.get('/test', function (req, res) {
   res.sendfile(__dirname + '/test.html');
 });
+
+app.get('/test1', function (req, res) {
+  res.sendfile(__dirname + '/test1.html');
+});

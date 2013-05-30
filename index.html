@@ -4,18 +4,25 @@
    <script src="js/alignments.js"></script>
    <script src="js/population.js"></script>
    <script src="js/underscore-min.js"> </script>
-   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>
+   <script src="js/jquery.min.js"></script>
    <script src="./js/d3.v3.min.js"></script>
+   <script src="js/queue.v1.min.js"></script>
+   <script src="js/topojson.v0.min.js"></script>
+   <script src="js/globe.js"></script>
+   <script type="text/javascript" charset="utf-8" src="js/d3.geo.projection.v0.min.js"></script>
    <script src="/socket.io/lib/socket.io.js"></script>
    <script src="./js/modernizr-custom.js"></script>
+   <script src="js/chardinjs.js"></script>
+   <link href="js/chardinjs.css" rel="stylesheet">
    <link rel="stylesheet" href="css/popTree.css" type="text/css" />
    <script type="text/javascript" src="js/popTree.js"></script>
-   <link href='http://fonts.googleapis.com/css?family=Quicksand:300,400' rel='stylesheet' type='text/css'>
+   <link href='css/quicksand.css' rel='stylesheet' type='text/css'>
    <style>
       body {
          font-family: quicksand;
          margin: 0px;
          padding: 0px;
+/*         background-image:url('images/handmadepaper.png');*/
       }
       
       #title {
@@ -46,6 +53,35 @@
          margin-top:-5px;
          color:#2d8fc1;
          margin-left:5px;
+      }
+      
+      .red-bg {
+         background: #d62a2d; /* Old browsers */
+         background: -moz-linear-gradient(top, #d62a2d 0%, #992329 100%); /* FF3.6+ */
+         background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#d62a2d), color-stop(100%,#992329)); /* Chrome,Safari4+ */
+         background: -webkit-linear-gradient(top, #d62a2d 0%,#992329 100%); /* Chrome10+,Safari5.1+ */
+         background: -o-linear-gradient(top, #d62a2d 0%,#992329 100%); /* Opera 11.10+ */
+         background: -ms-linear-gradient(top, #d62a2d 0%,#992329 100%); /* IE10+ */
+         background: linear-gradient(to bottom, #d62a2d 0%,#992329 100%); /* W3C */
+         filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#d62a2d', endColorstr='#992329',GradientType=0 ); /* IE6-9 */
+         
+      }
+      #tryit {
+         margin-top:50px;
+         border-radius:6px;
+         cursor:pointer;
+         padding: 5px 5px 5px;
+         color:white;
+         font-size:60px;
+         width:180px;
+         margin-left:auto;
+         margin-right:auto
+      }
+      
+      .disabled-btn {
+         cursor: auto;
+         opacity: 0.2;
+         pointer-events: none;
       }
       
       .nt-range {
@@ -89,6 +125,33 @@
          height:100%;
       }
       
+      #globe {
+          position: relative;
+          width: 400px;
+          margin-left:auto;
+          margin-right: auto;
+          margin-top: -60px;
+      }
+      
+      #globe .gtitle {
+        position: absolute;
+        top: 265px;
+        font-family: Quicksand;
+        font-size: 22px;
+        font-weight:400;
+        text-align: center;
+      }
+
+      #globe .description {
+        position: absolute;
+        top: 293px;
+        font-family: Quicksand;
+        font-size: 14px;
+        font-weight:300;
+        text-align: center;
+      }
+      
+      
    </style>
    
    <script type="text/javascript">
@@ -114,6 +177,7 @@
       ]);      
             
       $(document).ready(function() {
+          window.runLocal = false;
          
            // set range
            var range = '4000000nt - 4050000nt';
@@ -128,6 +192,9 @@
               .attr("width", '100%')
               .attr("height", "100%")
               .attr("id", "vcf-graph")
+              
+           // draw globe
+           makeGlobe("#globe");
 
            createPopTree("js/vcfTree.json", svg,m, w - m[1] - m[3], h  - m[0] - m[2], function(d) {
               
@@ -159,6 +226,43 @@
             .style("fill", "none")
             .attr('width', window.pcaBoxW)
             .attr('height', boxH);
+            
+        $('body').bind("chardinJs:start", function() {
+            var offset = $("#AFR-vcf-graph").offset();
+            var afrleft = offset.left;
+            var afrtop = offset.top;
+            var hint = $("#afr-hint");
+            hint.css("left", afrleft+23);
+            hint.css('visibility', 'visible');
+            hint.css("top", afrtop+17);
+            hint.css("width", "15px");
+            hint.css("z-index", 9999999999);
+            hint.css("border-top", '1px solid white');
+            
+            var offset = $("#YRI-vcf-graph").offset();
+            var yrileft = offset.left;
+            var yritop = offset.top;
+            var hint = $("#yri-hint");
+            hint.css("left", yrileft - 225);
+            hint.css('visibility', 'visible');
+            hint.css("top", yritop);
+            hint.css("height", "65px");
+            hint.css("width", "220px");
+            hint.css("z-index", 9999999999);
+            hint.css("border-right", '1px solid white');
+            
+            $("#pca-hint").css('visibility', 'visible');
+        });
+        
+        $('body').bind("chardinJs:stop", function() {
+           $("#afr-hint").css('visibility', 'hidden');
+           $("#yri-hint").css('visibility', 'hidden');
+           $("#pca-hint").css('visibility', 'hidden');
+        })
+        
+           
+         
+         
       });
       
       // set defaults
@@ -171,6 +275,11 @@
 
    </script>
    <script>
+      function toApp() {
+         $("#intro").css("display", "none");
+         $("#runner").css("visibility", "visible");
+      }
+      
       function getChromosome() {
          var el = document.getElementById('chromosome');
          var chr = el.options[el.selectedIndex].value;
@@ -212,7 +321,11 @@
 
       function getStaticVcfUrl() {
          var chr = getChromosome();
-         var vcf = "-h 'http://s3.amazonaws.com/1000genomes/release/20101123/interim_phase1_release/ALL.chr" + chr + ".phase1.projectConsensus.genotypes.vcf.gz'";
+         if (window.runLocal)
+            var baseUrl = "http://0.0.0.0/~chase/data/"
+         else
+            var baseUrl = "http://s3.amazonaws.com/1000genomes/release/20101123/interim_phase1_release/";
+         var vcf = "-h '" + baseUrl + "ALL.chr" + chr + ".phase1.projectConsensus.genotypes.vcf.gz'";
          var url = "http://0.0.0.0:7090?cmd=" + vcf + " "
                  + chr + ":" + getMin() + "-" + getMax();
                  
@@ -234,7 +347,7 @@
       }
       
       function getVcfKeepUrl() {
-         var url = 'http://0.0.0.0:7080?cmd= '
+         var url = 'http://0.0.0.0:7080?cmd=vcfkeepsamples - '
                  + getStaticVcfUrl() + ' '
                  + getActiveVcfs();
 
@@ -278,7 +391,7 @@
             
          });
          socket.on('end', function() {
-            updateVcf(variants, w, x);
+            window.requestAnimationFrame(updateVcf(variants, w, x));
             
          })
          socket.emit('run', { 'url' : url })
@@ -333,7 +446,7 @@
       function getPcaGdsUrl() {
          var url = "http://0.0.0.0:8000?cmd="
                  + getPcaGdsName() + " "
-                 + $("#ld-slider").val() + " "
+                 + $("#mr-slider").val() + " "
                  + $("#maf-slider").val() + " "
                  + getActiveVcfs()
                  + "&format=json"
@@ -356,7 +469,7 @@
          var gds = getPcaGdsName();
          var url = "http://0.0.0.0:8010?cmd=stdin " 
                  + gds + " " 
-                 + $("#ld-slider").val() + " "
+                 + $("#mr-slider").val() + " "
                  + $("#maf-slider").val() + " "
                  + getVcfKeepUrl()//getStaticVcfUrl() //
                  + "&format=json"
@@ -380,6 +493,7 @@
          socket.on('end', function() {
             d3.selectAll(".dot").style("fill-opacity", 1);
             window.dotFillOp = '1';
+            if(window.timesRun < 2) { $("#pcabutton").removeClass("disabled-btn"); }
          });
          socket.emit('run', { 'url' : url })
       }
@@ -811,6 +925,7 @@
       
       function startPca() {
          window.timesRun = window.timesRun + 1 || 1;
+         $("#pcabutton").addClass("disabled-btn");
          
          // save previous data
          if( d3.select("#g-pca").selectAll(".dot").length > 0 ) {
@@ -822,7 +937,7 @@
          }
          
          // get VCF data
-        getStaticVcfData();
+       getStaticVcfData();
          
          // fire PCA
          getPcaData();
@@ -835,6 +950,7 @@
 <body>
    <!-- fixed single page app -->
    <div id="app" style="position:absolute; left:0px; top:0px; bottom:0px; right:0px">
+      <!-- <div style="width:100%; height:15px; background:rgb(50,50,50); color:rgb(200,200,200); font-size:12px; text-align:right;"><span style="margin-right:15px">Instructions</span></div> -->
       <!-- title -->
       <div id="title" >
          PCA<span style="color:#f36a22">gr</span>
@@ -842,53 +958,86 @@
 
       </div>
       
-      <!-- global controls -->
-      <div style="margin-top: 20px">
-         <div style="position:relative; width: 500px; margin-left: auto; margin-right: auto">            
-            <select id="chromosome" style="width:65px; position:absolute; top: 5px; left: 0px">
-              <option value="1">Chr1</option>
-              <option selected='selected' value="2">Chr2</option>
-              <option value="3">Chr3</option>
-              <option value="4">Chr4</option>
-              <option value="5">Chr5</option>
-              <option value="6">Chr6</option>
-              <option value="7">Chr7</option>
-              <option value="8">Chr8</option>
-              <option value="9">Chr9</option>
-              <option value="10">Chr10</option>
-              <option value="11">Chr11</option>
-              <option value="12">Chr12</option>
-              <option value="13">Chr13</option>
-              <option value="14">Chr14</option>
-              <option value="15">Chr15</option>
-              <option value="16">Chr16</option>
-              <option value="17">Chr17</option>
-              <option value="18">Chr18</option>
-              <option value="19">Chr19</option>
-              <option value="20">Chr20</option>
-              <option value="21">Chr21</option>
-              <option value="22">Chr22</option>
-              <option value="X">ChrX</option>
-              <option value="Y">ChrY</option>
-            </select>
-            <div style="width:150px; position:absolute; top: 6px; left: 80px">1000G VCF</div>
-            <input id="range-nt" class="nt-range" type="text"  style="width:150px; position:absolute; top: 5px; right: 160px"/>
-            <div onClick="startPca()" style="cursor:pointer;width:150px; position:absolute; top: 5px; right:0px; color:white; background: #C02028; border-radius: 10px; text-align: center">Run / Compare</div>
-         </div>
-      </div>      
-      
-      <!-- svg container for tree and pca chart -->
-      <div id="graph-container"></div>
-
-      <!-- pca controls -->
-      <div id="pca-settings" style="position:absolute; margin-left:-250px; left:50%; top:49% ;width:550px;" >
-         <span style="position:absolute; top: 3px; left: 0px">MAF</span>
-         <input id="maf-slider" onmouseup="getPcaGdsData()" value="0.03" type="range" min="0" max="0.1" step="0.01" style="position:absolute; top: 5px; left: 34px"/>
-         <input id="ld-slider" onmouseup="getPcaGdsData()" value="4" type='range' min="0" max="10" step="0.1" style="position:absolute; top: 6px; left: 200px; height: 10px"/>
-         <span style="position:absolute; top: 2px; left: 334px">LD</span>
-         <span style="position:absolute; top: 1px; right: 0px"><input id='colorBy' onchange="updatePcaChart()" type="checkbox" name="vehicle" value="Bike">Color By Population</span>
+      <!-- the intro explaining the app -->
+      <div id="intro" style="font-size:65px; width:600px; margin-left:auto;margin-right:auto; text-align:center; margin-top: 20px">
+         Realtime Variant Clustering 
+         <div style="font-size:20px; color:rgb(80,80,80);margin-top:10px">use 1000G project variant data to cluster populations</div>
+         <div id="globe"></div>
+         <div class="red-bg" id="tryit" onClick="toApp()">Try it</div>
       </div>
       
+      <!-- the actual running applicaion -->
+      <div id="runner" style="visibility:hidden">
+      
+         <!-- global controls -->
+         <div style="margin-top: 20px">         
+            <div style="position:relative; width: 410px; margin-left: auto; margin-right: auto" >            
+               <img title="instructions" onClick="$('body').chardinJs('toggle')" src="images/info.png" style="position:absolute; left:0px; height:20px; top:6px; cursor: pointer" />
+               <select id="chromosome" style="width:65px; position:absolute; top: 5px; left: 25px" data-intro="Select Chromosome" data-position="bottom">
+                 <option value="1">Chr1</option>
+                 <option selected='selected' value="2">Chr2</option>
+                 <option value="3">Chr3</option>
+                 <option value="4">Chr4</option>
+                 <option value="5">Chr5</option>
+                 <option value="6">Chr6</option>
+                 <option value="7">Chr7</option>
+                 <option value="8">Chr8</option>
+                 <option value="9">Chr9</option>
+                 <option value="10">Chr10</option>
+                 <option value="11">Chr11</option>
+                 <option value="12">Chr12</option>
+                 <option value="13">Chr13</option>
+                 <option value="14">Chr14</option>
+                 <option value="15">Chr15</option>
+                 <option value="16">Chr16</option>
+                 <option value="17">Chr17</option>
+                 <option value="18">Chr18</option>
+                 <option value="19">Chr19</option>
+                 <option value="20">Chr20</option>
+                 <option value="21">Chr21</option>
+                 <option value="22">Chr22</option>
+                 <option value="X">ChrX</option>
+                 <option value="Y">ChrY</option>
+               </select>
+               <!-- <div style="width:150px; position:absolute; top: 6px; left: 100px">1000G VCF</div> -->
+               <input id="range-nt" class="nt-range" type="text"  style="width:150px; position:absolute; top: 5px; right: 160px" data-intro="Select region" data-position="bottom"/>
+                <div id="pcabutton" class="red-bg" onClick="startPca()" style="cursor:pointer;width:150px; position:absolute; top: 5px; right:0px; color:white; border-radius: 10px; text-align: center" data-intro="Click to run. Change settings and run again to compare analyses" data-position="right">Run</div>
+            </div>
+         </div>      
+      
+         <!-- svg container for tree and pca chart -->
+         <div id="graph-container"></div>
+
+         <!-- pca controls -->
+         <div id="pca-settings" style="position:absolute; margin-left:-250px; left:50%; top:49% ;width:350px;" data-intro="Recalculate PCA using cached data" data-position="top">
+            <div style="position:absolute; width:170px; top: 3px; left: 0px" data-intro="Minor allele frequency threshold" data-position="bottom">
+               <span>MAF</span>
+               <div style="display:inline; position:absolute; left:37px; top: 1px"><input id="maf-slider" onmouseup="getPcaGdsData()" value="0.03" type="range" min="0" max="0.1" step="0.01" /></div>
+            </div>
+            <!-- <div style="position:absolute; width:157px; top: 3px; left: 198px; text-align:right" data-intro="Missing data threshold" data-position="bottom">
+               <div style="display:inline; position:absolute; right:39px; top: 1px"><input id="mr-slider" onmouseup="getPcaGdsData()" value="0.05" type="range" min="0" max="0.1" step="0.01" /></div>
+               <span>MDT</span>
+            </div> -->
+            <div style="position:absolute; top: 1px; right: 0px" data-intro="Color by continent or population" data-position="bottom">
+               <span ><input id='colorBy' onchange="updatePcaChart()" type="checkbox" >Color By Population</span>
+            </div>
+         </div>
+      
+      </div>
+   </div>
+   
+   <div id="afr-hint" style="position:absolute; visibility:hidden">
+      <div style="height:20px; border-right:1px solid white; width: 50%" ></div>
+      <div style="color:white; width: 200px; margin-left: -70px; margin-top:5px">Click on circles to add and remove populations from analysis</div>
+   </div>
+   <div id="yri-hint" style="position:absolute; visibility:hidden; color: white">
+      <div style="height:100%; width:160px; float: left">Boxes show variant depth by population</div> 
+      <div style="width:60px; height:50%; border-bottom: 1px solid white; float:right"></div>
+   </div>
+   
+   <div id="pca-hint" style="position:absolute; height:80px;  visibility:hidden; color:white; left: 40px; border-right:1px solid white; bottom: 100px; width:260px; z-index: 9999999">
+      <div style="height:100%; padding-top:20px; width:120px; float: left">PCA results</div> 
+      <div style="width:135px; height:50%; border-bottom: 1px solid white; float:right"></div>      
    </div>
    
 </body>
