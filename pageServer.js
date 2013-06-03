@@ -4,13 +4,19 @@
 var express = require('express'),
     http = require('http'),
     app = express(),
-    server = http.createServer(app);
+    server = http.createServer(app),
+    port = 7070;
+    
+// process command line options
+process.argv.forEach(function (val, index, array) {
+  if(val == '--port' && array[index+1]) port = array[index+1];
+});
 
 // setup socket
 var io = require('socket.io').listen(server);
 
 // start server
-server.listen(7070);
+server.listen(port);
 
 // setup server
 app.use('/', express.static(__dirname + '/public'));
