@@ -322,11 +322,11 @@
       function getStaticVcfUrl() {
          var chr = getChromosome();
          if (window.runLocal)
-            var baseUrl = "http://0.0.0.0/~chase/data/"
+            var baseUrl = "http://ec2-54-242-95-86.compute-1.amazonaws.com/~chase/data/"
          else
             var baseUrl = "http://s3.amazonaws.com/1000genomes/release/20101123/interim_phase1_release/";
          var vcf = "-h '" + baseUrl + "ALL.chr" + chr + ".phase1.projectConsensus.genotypes.vcf.gz'";
-         var url = "http://0.0.0.0:7090?cmd=" + vcf + " "
+         var url = "http://ec2-23-20-163-151.compute-1.amazonaws.com:7090?cmd=" + vcf + " "
                  + chr + ":" + getMin() + "-" + getMax();
                  
          return encodeURI(url);
@@ -347,7 +347,7 @@
       }
       
       function getVcfKeepUrl() {
-         var url = 'http://0.0.0.0:7080?cmd=vcfkeepsamples - '
+         var url = 'http://ec2-50-19-207-171.compute-1.amazonaws.com:7080?cmd=vcfkeepsamples - '
                  + getStaticVcfUrl() + ' '
                  + getActiveVcfs();
 
@@ -436,7 +436,7 @@
       }
       
       function getPcaGdsName() {
-         // var name = "http://0.0.0.0:8080?cmd=-f /Users/chase/Tools/freebayes/data/hs_ref_chr"
+         // var name = "http://ec2-54-242-95-86.compute-1.amazonaws.com:8080?cmd=-f /Users/chase/Tools/freebayes/data/hs_ref_chr"
          //                   + getChromosome() + ".fa "
          //                   + _.pluck($('#bam-url').tokenInput("get"), "name").sort().join(" ");
          
@@ -444,7 +444,7 @@
       }
       
       function getPcaGdsUrl() {
-         var url = "http://0.0.0.0:8000?cmd="
+         var url = "http://ec2-54-234-247-160.compute-1.amazonaws.com:8000?cmd="
                  + getPcaGdsName() + " "
                  + $("#mr-slider").val() + " "
                  + $("#maf-slider").val() + " "
@@ -467,7 +467,7 @@
       
       function getPcaUrl() {
          var gds = getPcaGdsName();
-         var url = "http://0.0.0.0:8010?cmd=stdin " 
+         var url = "http://ec2-107-22-146-229.compute-1.amazonaws.com:8010?cmd=stdin " 
                  + gds + " " 
                  + $("#mr-slider").val() + " "
                  + $("#maf-slider").val() + " "
