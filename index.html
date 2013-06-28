@@ -14,6 +14,8 @@
    <script src="./js/modernizr-custom.js"></script>
    <script src="js/chardinjs.js"></script>
    <link href="js/chardinjs.css" rel="stylesheet">
+   <link href="css/bootstrapSwitch.css" rel="stylesheet">
+   <script src="js/bootstrapSwitch.js"></script>
    <link rel="stylesheet" href="css/popTree.css" type="text/css" />
    <script type="text/javascript" src="js/popTree.js"></script>
    <link href='css/quicksand.css' rel='stylesheet' type='text/css'>
@@ -33,6 +35,7 @@
          top:10px;
          left: 10px;
          margin-bottom: 10px;
+         color:#2d8fc1;
       }
       
       div.tooltip {   
@@ -210,6 +213,11 @@
                }
               getPcaGdsData();
            });
+           
+         // set switch event handler
+         $('#colorBy').on('switch-change', function (e, data) {
+             updatePcaChart();
+         });
          
          // draw pca box         
          window.pcaBoxW = w - 220;
@@ -302,16 +310,16 @@
          return parseInt(max);  
       };
       function determineColor(d) {
-         if (document.getElementById("colorBy").checked) 
-            return window.color20( window.id2pop[d[2]] ); 
-         else
+         if ($('#colorBy').bootstrapSwitch('status')) 
             return window.color10( window.pop2region[ window.id2pop[d[2]] ]);
+         else
+            return window.color20( window.id2pop[d[2]] );
       }
       function determineColorFunc() {
-         if (document.getElementById("colorBy").checked) 
-            return window.color20; 
+         if ($('#colorBy').bootstrapSwitch('status')) 
+            return window.color10; 
          else
-            return window.color10;
+            return window.color20;
       }
       function getVcfBoxWidth() { 
          var w = d3.select('#vcf-graph').attr('width');
@@ -444,7 +452,7 @@
       }
       
       function getPcaGdsUrl() {
-         var url = "http://ec2-107-22-146-229.compute-1.amazonaws.com:8000?cmd="
+         var url = "http://ec2-54-234-247-160.compute-1.amazonaws.com:8000?cmd="
                  + getPcaGdsName() + " "
                  + $("#mr-slider").val() + " "
                  + $("#maf-slider").val() + " "
@@ -953,9 +961,7 @@
       <!-- <div style="width:100%; height:15px; background:rgb(50,50,50); color:rgb(200,200,200); font-size:12px; text-align:right;"><span style="margin-right:15px">Instructions</span></div> -->
       <!-- title -->
       <div id="title" >
-         PCA<span style="color:#f36a22">gr</span>
-         <div id="subtitle">1000G realtime principal <span style="letter-spacing:2px">component analysis</span></div>
-
+         iobio
       </div>
       
       <!-- the intro explaining the app -->
@@ -1009,17 +1015,19 @@
          <div id="graph-container"></div>
 
          <!-- pca controls -->
-         <div id="pca-settings" style="position:absolute; margin-left:-250px; left:50%; top:49% ;width:350px;" data-intro="Recalculate PCA using cached data" data-position="top">
+         <div id="pca-settings" style="position:absolute; margin-left:-250px; left:50%; top:49% ;width:525px;" data-intro="Recalculate PCA using cached data" data-position="top">
             <div style="position:absolute; width:170px; top: 3px; left: 0px" data-intro="Minor allele frequency threshold" data-position="bottom">
                <span>MAF</span>
                <div style="display:inline; position:absolute; left:37px; top: 1px"><input id="maf-slider" onmouseup="getPcaGdsData()" value="0.03" type="range" min="0" max="0.1" step="0.01" /></div>
             </div>
-            <!-- <div style="position:absolute; width:157px; top: 3px; left: 198px; text-align:right" data-intro="Missing data threshold" data-position="bottom">
-               <div style="display:inline; position:absolute; right:39px; top: 1px"><input id="mr-slider" onmouseup="getPcaGdsData()" value="0.05" type="range" min="0" max="0.1" step="0.01" /></div>
-               <span>MDT</span>
-            </div> -->
-            <div style="position:absolute; top: 1px; right: 0px" data-intro="Color by continent or population" data-position="bottom">
-               <span ><input id='colorBy' onchange="updatePcaChart()" type="checkbox" >Color By Population</span>
+            <div style="position:absolute; top: -6px; right: 0px" data-intro="Color by continent or population" data-position="bottom">
+                <div style="position:absolute; top:-20px; left:160px">Color by</div>
+               <!-- <span ><input id='colorBy' onchange="updatePcaChart()" type="checkbox" >Color By Population</span> -->               
+               <span>super-population</span>
+               <div id="colorBy" class="switch" data-on-label="<-" data-off-label="->">
+                   <input type="checkbox" checked />
+               </div>
+               <span>population</span>
             </div>
          </div>
       
