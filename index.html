@@ -494,7 +494,9 @@
          });
          initPcaChart(initData);
          var socket = io.connect(url);
+         var pcaSpinner = document.getElementById('pca-spinner');
          socket.on('results', function(res) {
+            if(pcaSpinner.style.visibility == 'visible') {pcaSpinner.style.visibility = 'hidden'; pcabutton.style.visibility = 'visible';}
             var results = JSON.parse(res.data);
             updatePcaChart(results, 10000);
          });
@@ -933,6 +935,8 @@
       
       function startPca() {
          window.timesRun = window.timesRun + 1 || 1;
+         $("#pca-spinner").css('visibility', 'visible');
+         $("#pcabutton").css('visibility', 'hidden');
          $("#pcabutton").addClass("disabled-btn");
          
          // save previous data
@@ -1008,6 +1012,7 @@
                <!-- <div style="width:150px; position:absolute; top: 6px; left: 100px">1000G VCF</div> -->
                <input id="range-nt" class="nt-range" type="text"  style="width:150px; position:absolute; top: 5px; right: 160px" data-intro="Select region" data-position="bottom"/>
                 <div id="pcabutton" class="red-bg" onClick="startPca()" style="cursor:pointer;width:150px; position:absolute; top: 5px; right:0px; color:white; border-radius: 10px; text-align: center" data-intro="Click to run. Change settings and run again to compare analyses" data-position="right">Run</div>
+                <img id="pca-spinner" style="width:70px; position:absolute; top: 4px; right:60px; visibility:hidden;" src="images/pulsing-spinner.gif" />
             </div>
          </div>      
       
@@ -1028,7 +1033,7 @@
                    <input type="checkbox" checked />
                </div>
                <span>population</span>
-            </div>
+            </div>            
          </div>
       
       </div>
