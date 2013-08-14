@@ -4,7 +4,7 @@
    <script src="js/alignments.js"></script>
    <script src="js/population.js"></script>
    <script src="js/underscore-min.js"> </script>
-   <script src="js/jquery.min.js"></script>
+   <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
    <script src="./js/d3.v3.min.js"></script>
    <script src="js/queue.v1.min.js"></script>
    <script src="js/topojson.v0.min.js"></script>
@@ -334,7 +334,7 @@
          else
             var baseUrl = "http://s3.amazonaws.com/1000genomes/release/20101123/interim_phase1_release/";
          var vcf = "-h '" + baseUrl + "ALL.chr" + chr + ".phase1.projectConsensus.genotypes.vcf.gz'";
-         var url = "http://ec2-23-20-163-151.compute-1.amazonaws.com:7090?cmd=" + vcf + " "
+         var url = "http://tabix.iobio.io?cmd=" + vcf + " "
                  + chr + ":" + getMin() + "-" + getMax();
                  
          return encodeURI(url);
@@ -355,8 +355,8 @@
       }
       
       function getVcfKeepUrl() {
-         var url = 'http://ec2-50-19-207-171.compute-1.amazonaws.com:7080?cmd=vcfkeepsamples - '
-                 + getStaticVcfUrl() + ' '
+         var url = 'http://vcflib.iobio.io?cmd=vcfkeepsamples - '
+                 + encodeURIComponent(getStaticVcfUrl()) + ' '
                  + getActiveVcfs();
 
          return encodeURI(url);
@@ -365,7 +365,7 @@
       function getStaticVcfData() {
         // var url = getVcfKeepUrl() + "&format=json&parseByLine=true";
          var url = getStaticVcfUrl() + "&format=json&parseByLine=true";
-         var socket = io.connect(url);
+         var socket = io.connect(url, {port: 80});
          var samples = undefined;
          var variants = {};
          var i=0;
@@ -452,7 +452,7 @@
       }
       
       function getPcaGdsUrl() {
-         var url = "http://ec2-107-22-146-229.compute-1.amazonaws.com:8000?cmd="
+         var url = "http://gds.iobio.io?cmd="
                  + getPcaGdsName() + " "
                  + $("#mr-slider").val() + " "
                  + $("#maf-slider").val() + " "
@@ -464,7 +464,7 @@
       
       function getPcaGdsData() {
          var url = getPcaGdsUrl();
-         var socket = io.connect(url);
+         var socket = io.connect("http://gds.iobio.io", {port: 80});
          socket.on('results', function(res){
             var results = JSON.parse(res.data);
             updatePcaChart(results, 750);
@@ -475,11 +475,11 @@
       
       function getPcaUrl() {
          var gds = getPcaGdsName();
-         var url = "http://ec2-107-22-146-229.compute-1.amazonaws.com:8010?cmd=stdin " 
+         var url = "http://pca.iobio.io?cmd=stdin " 
                  + gds + " " 
                  + $("#mr-slider").val() + " "
                  + $("#maf-slider").val() + " "
-                 + getVcfKeepUrl()//getStaticVcfUrl() //
+                 + encodeURIComponent(getVcfKeepUrl())//getStaticVcfUrl() //
                  + "&format=json"
                  + "&parseByLine=true";
          return encodeURI(url);
@@ -493,7 +493,7 @@
             return [0,0,k,v]; 
          });
          initPcaChart(initData);
-         var socket = io.connect(url);
+         var socket = io.connect(url, {port: 80});
          var pcaSpinner = document.getElementById('pca-spinner');
          socket.on('results', function(res) {
             if(pcaSpinner.style.visibility == 'visible') {pcaSpinner.style.visibility = 'hidden'; pcabutton.style.visibility = 'visible';}
@@ -952,7 +952,7 @@
        getStaticVcfData();
          
          // fire PCA
-         getPcaData();
+       getPcaData();
 
       }
       
