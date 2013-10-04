@@ -10,7 +10,7 @@
    <script src="js/topojson.v0.min.js"></script>
    <script src="js/globe.js"></script>
    <script type="text/javascript" charset="utf-8" src="js/d3.geo.projection.v0.min.js"></script>
-   <script src="js/socket.io.js"></script>
+   <script src="js/binary.js"></script>
    <script src="./js/modernizr-custom.js"></script>
    <script src="js/chardinjs.js"></script>
    <link href="js/chardinjs.css" rel="stylesheet">
@@ -334,8 +334,8 @@
          else
             var baseUrl = "http://s3.amazonaws.com/1000genomes/release/20101123/interim_phase1_release/";
          var vcf = "-h '" + baseUrl + "ALL.chr" + chr + ".phase1.projectConsensus.genotypes.vcf.gz'";
-         var url = "http://tabix.iobio.io?cmd=" + vcf + " "
-                 + chr + ":" + getMin() + "-" + getMax();
+         var url = "ws://tabix.iobio.io?cmd=" + vcf + " "
+                 + chr + ":" + getMin() + "-" + getMax();         
                  
          return encodeURI(url);
       }
@@ -355,9 +355,9 @@
       }
       
       function getVcfKeepUrl() {
-         var url = 'http://vcflib.iobio.io?cmd=vcfkeepsamples - '
+         var url = 'ws://vcflib.iobio.io?cmd=vcfkeepsamples - '
                  + encodeURIComponent(getStaticVcfUrl()) + ' '
-                 + getActiveVcfs();
+                 + getActiveVcfs();        
 
          return encodeURI(url);
       }
@@ -365,7 +365,7 @@
       function getStaticVcfData() {
         // var url = getVcfKeepUrl() + "&format=json&parseByLine=true";
          var url = getStaticVcfUrl() + "&format=json&parseByLine=true";
-         var socket = io.connect(url, {port: 80});
+         // var socket = io.connect(url, {port: 80});
          var samples = undefined;
          var variants = {};
          var i=0;
@@ -374,35 +374,37 @@
              .domain([getMin(), getMax()])
              .range([2, w-2]);            
          
-         socket.on('results', function(res) {
-            var results = JSON.parse(res.data);
-            if (results.length == 0) return;  
+         // socket.on('results', function(res) {
+         var client = BinaryClient(url);
+         client.on('open', function(stream){
+            var stream = client.createStream({event:'run', params : {'url':url}});
+            stream.on('data', function(res, options) {                    
+                var results = JSON.parse(res);
+                if (results == undefined || results.length == 0) return;  
 
-            // get samples
-            if (results.header != undefined)
-               samples = results.header.samples;
+                // get samples
+                if (results.header != undefined)
+                   samples = results.header.samples;
             
-            // process genotypes
-            if(results.data != undefined) {
-               i+= 1;
-               for( var j=0; j < results.data.genotypes.length; j++) {
-                  var geno = results.data.genotypes[j];
-                  if( geno[0] != 0 || geno[2] != 0) {
-                     var pop = window.id2pop[ samples[j] ];
-                     // var group = d3.select("#" + pop + "-vcf-graph");
-                     if ( variants[pop] == undefined ) variants[pop] = [];
-                     variants[pop].push( parseInt(results.data.pos) );
-                  }
-               }
-               if ( (i % 400) == 0) updateVcf(variants, w, x);
-            }
-            
+                // process genotypes
+                if(results.data != undefined) {
+                   i+= 1;
+                   for( var j=0; j < results.data.genotypes.length; j++) {
+                      var geno = results.data.genotypes[j];
+                      if( geno[0] != 0 || geno[2] != 0) {
+                         var pop = window.id2pop[ samples[j] ];
+                         // var group = d3.select("#" + pop + "-vcf-graph");
+                         if ( variants[pop] == undefined ) variants[pop] = [];
+                         variants[pop].push( parseInt(results.data.pos) );
+                      }
+                   }
+                   if ( (i % 400) == 0) updateVcf(variants, w, x);
+                }
+            });
+            stream.on('end', function() {
+               window.requestAnimationFrame(updateVcf(variants, w, x));            
+            });            
          });
-         socket.on('end', function() {
-            window.requestAnimationFrame(updateVcf(variants, w, x));
-            
-         })
-         socket.emit('run', { 'url' : url })
       }
       
       function updateVcf(variants, w, x) {
@@ -452,36 +454,41 @@
       }
       
       function getPcaGdsUrl() {
-         var url = "http://gds.iobio.io?cmd="
+         var url = "ws://gds.iobio.io?cmd="
                  + getPcaGdsName() + " "
                  + $("#mr-slider").val() + " "
                  + $("#maf-slider").val() + " "
                  + getActiveVcfs()
                  + "&format=json"
                  + "&parseByLine=true";
+         
          return encodeURI(url);
       }
       
       function getPcaGdsData() {
          var url = getPcaGdsUrl();
-         var socket = io.connect("http://gds.iobio.io", {port: 80});
-         socket.on('results', function(res){
-            var results = JSON.parse(res.data);
-            updatePcaChart(results, 750);
-            
+         // var socket = io.connect("http://gds.iobio.io", {port: 80});
+         //         socket.on('results', function(res){
+         var client = BinaryClient(url);
+         client.on('open', function(stream){
+            var stream = client.createStream({event:'run', params : {'url':url}});
+            stream.on('data', function(res, options) {             
+                var results = JSON.parse(res);
+                updatePcaChart(results, 750);
+            });
          });
-         socket.emit('run', { 'url' : url })
       }
       
       function getPcaUrl() {
          var gds = getPcaGdsName();
-         var url = "http://pca.iobio.io?cmd=stdin " 
+         var url = "ws://pca.iobio.io?cmd=stdin " 
                  + gds + " " 
                  + $("#mr-slider").val() + " "
                  + $("#maf-slider").val() + " "
                  + encodeURIComponent(getVcfKeepUrl())//getStaticVcfUrl() //
                  + "&format=json"
                  + "&parseByLine=true";
+         
          return encodeURI(url);
       }
       
@@ -493,19 +500,23 @@
             return [0,0,k,v]; 
          });
          initPcaChart(initData);
-         var socket = io.connect(url, {port: 80});
+         // var socket = io.connect(url, {port: 80});
          var pcaSpinner = document.getElementById('pca-spinner');
-         socket.on('results', function(res) {
-            if(pcaSpinner.style.visibility == 'visible') {pcaSpinner.style.visibility = 'hidden'; pcabutton.style.visibility = 'visible';}
-            var results = JSON.parse(res.data);
-            updatePcaChart(results, 10000);
+         // socket.on('results', function(res) {
+         var client = BinaryClient(url);
+         client.on('open', function(stream){
+            var stream = client.createStream({event:'run', params : {'url':url}});
+            stream.on('data', function(res, options) {             
+                if(pcaSpinner.style.visibility == 'visible') {pcaSpinner.style.visibility = 'hidden'; pcabutton.style.visibility = 'visible';}
+                var results = JSON.parse(res);
+                updatePcaChart(results, 10000);
+            });
+            stream.on('end', function() {
+               d3.selectAll(".dot").style("fill-opacity", 1);
+               window.dotFillOp = '1';
+               if(window.timesRun < 2) { $("#pcabutton").removeClass("disabled-btn"); }
+            });            
          });
-         socket.on('end', function() {
-            d3.selectAll(".dot").style("fill-opacity", 1);
-            window.dotFillOp = '1';
-            if(window.timesRun < 2) { $("#pcabutton").removeClass("disabled-btn"); }
-         });
-         socket.emit('run', { 'url' : url })
       }
       
       function updatePcaChart(data, duration) {
