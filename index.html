@@ -180,6 +180,9 @@
       ]);      
             
       $(document).ready(function() {
+          var is_chrome = navigator.userAgent.toLowerCase().indexOf('chrome') > -1;
+          if (!is_chrome) alert("Warning! This site requires Google Chrome to function properly");
+          
           window.runLocal = false;
          
            // set range
