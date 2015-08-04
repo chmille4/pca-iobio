@@ -337,7 +337,7 @@
          else
             var baseUrl = "http://s3.amazonaws.com/1000genomes/release/20101123/interim_phase1_release/";
          var vcf = "-h '" + baseUrl + "ALL.chr" + chr + ".phase1.projectConsensus.genotypes.vcf.gz'";
-         var url = "ws://tabix.iobio.io?cmd=" + vcf + " "
+         var url = "ws://nv-blue.iobio.io/tabix/?cmd=" + vcf + " "
                  + chr + ":" + getMin() + "-" + getMax();         
                  
          return encodeURI(url);
@@ -358,7 +358,7 @@
       }
       
       function getVcfKeepUrl() {
-         var url = 'ws://vcflib.iobio.io?cmd=vcfkeepsamples - '
+         var url = 'ws://nv-blue.iobio.io/vcflib/?cmd=vcfkeepsamples - '
                  + encodeURIComponent(getStaticVcfUrl()) + ' '
                  + getActiveVcfs();        
 
@@ -457,7 +457,7 @@
       }
       
       function getPcaGdsUrl() {
-         var url = "ws://gds.iobio.io?cmd="
+         var url = "ws://" + window.gdsService.replace('pca', 'gds') + "?debug=true&cmd="
                  + getPcaGdsName() + " "
                  + $("#mr-slider").val() + " "
                  + $("#maf-slider").val() + " "
@@ -484,7 +484,8 @@
       
       function getPcaUrl() {
          var gds = getPcaGdsName();
-         var url = "ws://pca.iobio.io?cmd=stdin " 
+         // var url = "ws://snprelate.iobio.io?cmd=stdin " 
+         var url = "ws://nv-blue.iobio.io/snprelate/?getNodeUrl=true&cmd=stdin " 
                  + gds + " " 
                  + $("#mr-slider").val() + " "
                  + $("#maf-slider").val() + " "
@@ -509,6 +510,12 @@
          var client = BinaryClient(url);
          client.on('open', function(stream){
             var stream = client.createStream({event:'run', params : {'url':url}});
+
+            stream.on('error', function(error) { console.log ('ERROR: ' + error)})
+            stream.on('createClientConnection', function(connection) {
+              console.log(sa = connection.serverAddress);
+              window.gdsService = connection.serverAddress;
+            });
             stream.on('data', function(res, options) {             
                 if(pcaSpinner.style.visibility == 'visible') {pcaSpinner.style.visibility = 'hidden'; pcabutton.style.visibility = 'visible';}
                 var results = JSON.parse(res);
